@@ -4,7 +4,25 @@
     </h1>
 </center>
 
-[TOC]
+- [🎤前言](#🎤前言)
+
+- [🔧快速开始](#🔧快速开始)
+
+- [:tada:介绍](#:tada:介绍)
+  - [:clipboard:项目结构](##:clipboard:项目结构)
+
+- [:question:遇到的问题](#:question:遇到的问题)
+
+- [:bulb:可改进的地方](#:bulb:可改进的地方)
+
+- [:star:收获](#:star:收获)
+
+- [:book:参考文献](#:book:参考文献)
+
+
+
+- [:tada:介绍](#-tada---)
+  * [:clipboard:项目结构](#-clipboard----)
 
 # 🎤前言
 
@@ -24,11 +42,11 @@
 
 **HttpServer通常包含以下三大任务：**
 
-:small_blue_diamond:建立服务端与客户端的连接
+:small_blue_diamond:建立服务端与客户端（浏览器）的TCP连接
 
-:small_blue_diamond:解析HTTP的request请求
+:small_blue_diamond:解析HTTP的请求
 
-:small_blue_diamond:构造response数据响应HTTP
+:small_blue_diamond:响应HTTP，返回html代码或其他资源文件给客户端
 
 **为了保证Linux服务器程序的规范性，还涉及到以下应用：**
 
@@ -42,13 +60,19 @@
 
 通过**线程池 + epoll模型 + Reactor机制**实现的**并发模型框架**，如图1.所示
 
-使用**有限状态机**解析HTTP的**GET**和**POST**请求，==解析json格式数据==
+使用**有限状态机**解析HTTP的**GET**和**POST**请求
 
 创建一个简单的Mysql数据库，实现Web用户注册、登录、==注销==的功能，可以请求服务器的图片和视频文件，可以==上传图片、视频到服务器==
 
 ==使用Redis辅助缓存==
 
 ==用户登录后，可以使用在线版的聊天室==
+
+
+
+## :clipboard:项目结构
+
+
 
 
 
@@ -60,7 +84,7 @@
 
 
 
-# :bulb:存在的缺陷
+# :bulb:可改进的地方
 
 
 
