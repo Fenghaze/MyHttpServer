@@ -1,30 +1,20 @@
 <center>
 	<h1>
-        MyHttpServer
-    </h1>
+MyHttpServer
+</h1>
 </center>
 
-- [🎤前言](#🎤前言)
-
-- [🔧快速开始](#🔧快速开始)
-
-- [:tada:介绍](#:tada:介绍)
-  - [:clipboard:项目结构](##:clipboard:项目结构)
-
-- [:question:遇到的问题](#:question:遇到的问题)
-
-- [:bulb:可改进的地方](#:bulb:可改进的地方)
-
-- [:star:收获](#:star:收获)
-
-- [:book:参考文献](#:book:参考文献)
+- [ 🎤前言](#head1)
+- [ 🔧快速开始](#head2)
+- [ :tada:介绍](#head3)
+  - [ :clipboard:项目结构](#head4)
+- [ :question:遇到的问题](#head5)
+- [ :bulb:可改进的地方](#head6)
+- [ :star:收获](#head7)
+- [ :book:参考文献](#head8)
 
 
-
-- [:tada:介绍](#-tada---)
-  * [:clipboard:项目结构](#-clipboard----)
-
-# 🎤前言
+# <span id="head1"> 🎤前言</span>
 
 一直以来，我认为服务器开发是一件非常酷:sunglasses:的事情，从网上了解到C++后台服务器开发涉及到了许多知识，开发人员不仅需要熟练使用C++，懂得C++的内存管理机制，还要了解TCP/IP原理，此外，还要熟悉Linux下的编程环境，GDB调试，Makefile的编写等，服务器多并发也是很重要的一点，如何设计一个资源消耗少、响应速度快的高性能服务器是后台服务器开发的最终目标。
 
@@ -32,13 +22,13 @@
 
 
 
-# 🔧快速开始
+# <span id="head2"> 🔧快速开始</span>
 
 
 
 
 
-# :tada:介绍
+# <span id="head3"> :tada:介绍</span>
 
 **HttpServer通常包含以下三大任务：**
 
@@ -54,7 +44,7 @@
 
 :small_orange_diamond:日志系统：记录服务器运行状态
 
-:small_orange_diamond:压力测试：​测试服务器并发连接及数据交互的性能
+:small_orange_diamond:压力测试：测试服务器并发连接及数据交互的性能
 
 **本项目涉及到的技术：**
 
@@ -70,13 +60,13 @@
 
 
 
-## :clipboard:项目结构
+## <span id="head4"> :clipboard:项目结构</span>
 
 
 
 
 
-# :question:遇到的问题
+# <span id="head5"> :question:遇到的问题</span>
 
 - 代码冗长、不易阅读：使用代码解析工具查看代码结构，能够清楚地看到各个函数之间的依赖关系
 - 调试Debug，编写测试代码
@@ -84,17 +74,16 @@
 
 
 
-# :bulb:可改进的地方
+# <span id="head6"> :bulb:可改进的地方</span>
 
 
 
 
 
-# :star:收获
+# <span id="head7"> :star:收获</span>
 
 
 
 
 
-# :book:参考文献
-
+# <span id="head8"> :book:参考文献</span>
