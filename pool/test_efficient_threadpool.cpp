@@ -132,7 +132,7 @@ int main(int argc, char const *argv[])
     //从线程池中分离一个主线程，这个线程的任务是负责监听lfd，并派发任务给线程池中的子线程
     //从线程池类中获得一个子线程，传递cfd给这个子线程
     //这个子线程创建epoll，监听cfd和信号
-    EfficientThreadPool<CGIConn> &threadpool = EfficientThreadPool<CGIConn>::create(lfd, 5, 10);
+    EfficientThreadPool<CGIConn> &threadpool = EfficientThreadPool<CGIConn>::create(lfd, 2, 10);
 
     return 0;
 }

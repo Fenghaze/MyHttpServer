@@ -33,6 +33,19 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include "../lock/lock.h"
+
+class Threads
+{
+public:
+    pthread_t m_tid; //子线程号
+    int m_pipefd[2]; //和主线程通信的管道
+    int m_epfd;      //每个线程都有一个epoll内核事件表
+    int lfd;
+
+public:
+    Threads() : m_tid(-1), m_epfd(-1) {}
+};
 
 /*************************************************/
 /*******************工具函数***********************/
@@ -112,14 +125,13 @@ private:
     int busy_thread_number; /*工作中的线程数*/
     int exit_thread_number; /*要摧毁的线程数*/
 
-    pthread_t m_manager;              //管理者线程，管理线程池
-    pthread_t m_main;                 //主线程，负责接受连接和分配cfd
-    std::vector<pthread_t> m_threads; //线程池，使用vector存储工作线程
+    pthread_t m_manager;            //管理者线程，管理线程池
+    pthread_t m_main;               //主线程，负责接受连接和分配cfd
+    std::vector<Threads> m_threads; //线程池，使用vector存储工作线程
 
     bool m_shutdown; //标识是否关闭线程
-
+    int worker_id;
     int m_lfd;                                 //服务端的监听socket
-    int m_cfd;                                 //连接socket，所有线程共享
     int m_epfd;                                //每个线程都有一个epoll内核事件表
     static const int USER_PER_PROCESS = 65536; /*工作线程最多能处理的客户数量*/
     static const int MAX_EVENT_NUMBER = 10000; /*epoll最多能处理的事件数*/
@@ -139,11 +151,13 @@ EfficientThreadPool<T>::EfficientThreadPool(int lfd, int min_threads, int max_th
     }
     //初始化线程池
     m_threads.resize(min_thread_number);
-    //创建线程池
+    //创建线程池，并初始化每个线程要监听的lfd
     for (int i = 0; i < min_thread_number; i++)
     {
         printf("create the NO.%d thread\n", i + 1);
-        pthread_create(&m_threads[i], nullptr, worker, this);
+        pipe(m_threads[i].m_pipefd);
+        m_threads[i].lfd = m_lfd;
+        pthread_create(&m_threads[i].m_tid, nullptr, worker, &m_threads[i]);
     }
     //创建管理者线程
     pthread_create(&m_manager, nullptr, manager, this);
@@ -162,7 +176,7 @@ EfficientThreadPool<T>::~EfficientThreadPool()
 
     for (auto &thread : m_threads)
     {
-        pthread_join(thread, nullptr);
+        pthread_join(thread.m_tid, nullptr);
     }
     m_threads.clear();
     m_threads.shrink_to_fit();
@@ -186,25 +200,22 @@ void EfficientThreadPool<T>::run()
 {
 }
 
-//工作线程函数：运行run
+//工作线程函数：不断接受新的连接，并监听IO事件
 template <typename T>
 void *EfficientThreadPool<T>::worker(void *arg)
 {
-    auto pool = (EfficientThreadPool *)arg;
+    auto current_worker = *(Threads *)arg;
     //创建自己的epoll表
-    if (pool->m_lfd < 0)
-    {
-        return nullptr;
-    }
-    pool->m_epfd = epoll_create(1);
-    printf("sub thread %d create epollfd %d\n", gettid(), pool->m_epfd);
-    addfd(pool->m_epfd, pool->m_lfd);
+    current_worker.m_epfd = epoll_create(1);
     epoll_event events[MAX_EVENT_NUMBER];
     T *users = new T[USER_PER_PROCESS];
+    printf("sub thread %ld, lfd=%d, epfd=%d\n", pthread_self(), current_worker.lfd, current_worker.m_epfd);
     int ret = -1;
+    int pipefd = current_worker.m_pipefd[0];
+    addfd(current_worker.m_epfd, pipefd);
     while (true)
     {
-        int n = epoll_wait(pool->m_epfd, events, MAX_EVENT_NUMBER, -1);
+        int n = epoll_wait(current_worker.m_epfd, events, MAX_EVENT_NUMBER, -1);
         if ((n < 0) && (errno != EINTR))
         {
             perror("epoll_wait()");
@@ -213,27 +224,36 @@ void *EfficientThreadPool<T>::worker(void *arg)
         for (size_t i = 0; i < n; i++)
         {
             int sockfd = events[i].data.fd;
-            //接收新客户连接
-            if ((sockfd == pool->m_lfd) && (events[i].events & EPOLLIN))
+            if ((sockfd == pipefd) && (events[i].events & EPOLLIN))
             {
                 int client;
-                struct sockaddr_in raddr;
-                socklen_t raddr_len = sizeof(raddr);
-                int cfd = accept(pool->m_lfd, (struct sockaddr *)&raddr, &raddr_len);
-                if (cfd < 0)
+                ret = read(sockfd, (char *)&client, sizeof(client));
+                //ret = recv(sockfd, (char *)&client, sizeof(client), 0);
+                if (((ret < 0) && (errno != EAGAIN)) || ret == 0)
                 {
-                    perror("accept()");
                     continue;
                 }
-                //监听cfd
-                addfd(pool->m_epfd, cfd);
-                //添加新客户
-                users[cfd].init(pool->m_epfd, cfd, raddr);
+                else
+                {
+                    struct sockaddr_in raddr;
+                    socklen_t raddr_len = sizeof(raddr);
+                    int cfd = accept(current_worker.lfd, (struct sockaddr *)&raddr, &raddr_len);
+                    if (cfd < 0)
+                    {
+                        perror("accept()");
+                        continue;
+                    }
+                    //监听cfd
+                    addfd(current_worker.m_epfd, cfd);
+                    //添加新客户
+                    users[cfd].init(current_worker.m_epfd, cfd, raddr);
+                    printf("thread  %ld accept new client...\n", pthread_self());
+                }
             }
             else if (events[i].events & EPOLLIN)
             {
-                //users[sockfd].process();
-                continue;
+                users[sockfd].process();
+                printf("thread %ld epollin do something...\n", pthread_self());
             }
             else
             {
@@ -241,6 +261,10 @@ void *EfficientThreadPool<T>::worker(void *arg)
             }
         }
     }
+    delete[] users;
+    users = nullptr;
+    close(current_worker.m_epfd);
+    close(pipefd);
 }
 
 //管理者线程函数：定时对线程池进行管理，需要使用互斥锁进行写操作
@@ -258,12 +282,13 @@ void *EfficientThreadPool<T>::main_worker(void *arg)
 {
     auto pool = (EfficientThreadPool *)arg;
     pool->m_epfd = epoll_create(1);
-    printf("main thread %d create epollfd %d\n", gettid(), pool->m_epfd);
+    printf("main worker thread %ld, lfd=%d, epfd=%d\n", pthread_self(), pool->m_lfd, pool->m_epfd);
+
     addfd(pool->m_epfd, pool->m_lfd);
     epoll_event events[MAX_EVENT_NUMBER];
     T *users = new T[USER_PER_PROCESS];
     assert(users);
-    int sub_thread_counter = 0;
+    int k = 0;
     while (true)
     {
         int n = epoll_wait(pool->m_epfd, events, MAX_EVENT_NUMBER, -1);
@@ -272,25 +297,20 @@ void *EfficientThreadPool<T>::main_worker(void *arg)
             perror("epoll_wait()");
             break;
         }
+        int new_conn = 1;
         for (size_t i = 0; i < n; i++)
         {
             int sockfd = events[i].data.fd;
-            if (sockfd == pool->m_lfd) //有新客户，采用Round Robin方式分配子线程
+            if (sockfd == pool->m_lfd) //有新客户，采用随机数的方式分配子线程
             {
-                int k = sub_thread_counter;
-                do
-                {
-                    // if (pool->m_sub_process[k].m_pid != -1)
-                    // {
-                    //     break;
-                    // }
-                    k = (k + 1) % sub_thread_counter;
-                } while (k != sub_thread_counter);
-                //分配工作线程序号
-                sub_thread_counter = (k + 1) % pool->live_thread_number;
+                k = rand() % pool->live_thread_number;
+                //工作线程的tid
+                pool->worker_id = k;
                 //通知这个工作线程有新的连接到来
-
-                printf("send cfd to child %d\n", sub_thread_counter);
+                printf("wokertid[%d]\n", k);
+                //epoll检测到test->lfd有可读事件，说明有新客户，通知woker_id线程来接受连接
+                //send(pool->m_threads[k].m_pipefd[1], (char *)&new_conn, sizeof(new_conn), 0);
+                write(pool->m_threads[k].m_pipefd[1], (char *)&new_conn, sizeof(new_conn));
             }
             else
             {
