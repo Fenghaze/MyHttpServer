@@ -33,7 +33,7 @@ int main(int argc, char const *argv[])
 
     bind(lfd, (struct sockaddr *)&laddr, sizeof(laddr));
 
-    listen(lfd, 5);
+    listen(lfd, 128);
 
 #ifdef USE_PROCESSPOOL
     ProcessPool<HTTPConn> &pool = ProcessPool<HTTPConn>::create(lfd, 5, 10);

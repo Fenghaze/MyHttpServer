@@ -9,4 +9,4 @@ Server: http.o HTTPServer.cpp
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
-	rm -rf *.o
+	rm -rf *.o Server

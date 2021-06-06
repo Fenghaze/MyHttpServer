@@ -51,7 +51,7 @@ void start_conn(int epfd, int nums, const char *ip, int port)
     //发送连接请求
     for (size_t i = 0; i < nums; i++)
     {
-        sleep(1);
+        usleep(1000);
         //创建与服务端通信的socket
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
         printf("create 1 sock\n");
@@ -121,6 +121,7 @@ int main(int argc, char const *argv[])
 
     epoll_event events[MAX_EVENTS_NUM];
     char buffer[BUFFERSIZE];
+    //暂停发送接受服务
     pause();
     while (1)
     {

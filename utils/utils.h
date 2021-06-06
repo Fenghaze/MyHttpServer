@@ -19,6 +19,8 @@
 #include <signal.h>
 #include <string.h>
 
+
+
 //将fd设置为非阻塞
 static int setnonblocking(int fd)
 {
@@ -57,6 +59,5 @@ static void delfd(int epfd, int fd)
 //     ev.events = event;
 //     epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
 // }
-
 
 #endif // UTILS_H

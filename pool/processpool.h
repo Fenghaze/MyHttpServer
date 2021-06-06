@@ -9,6 +9,7 @@
 #ifndef PROCESSPOOL_H
 #define PROCESSPOOL_H
 
+#include "../clock/listClock.h"
 #include <vector>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -25,37 +26,28 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-
+#include "../utils/utils.h"
+#include "http.h"
 static int sig_pipefd[2];
 
-//将fd设置为非阻塞
-static int setnonblocking(int fd)
+//定时器的回调：关闭非活动连接
+void clock_func(int epfd, HTTPConn *user)
 {
-    int old_opt = fcntl(fd, F_GETFL);
-    int new_opt = old_opt | O_NONBLOCK;
-    fcntl(fd, F_SETFL, new_opt);
-    return old_opt;
+    //移除节点
+    epoll_ctl(epfd, EPOLL_CTL_DEL, user->m_sockfd, 0);
+    assert(user);
+    close(user->m_sockfd);
+    printf("close cfd %d\n", user->m_sockfd);
 }
 
-//添加节点到epfd
-static void addfd(int epfd, int fd, bool et = true)
+//触发定时器
+void time_handler(ListClock list_clock, int epfd)
 {
-    epoll_event ev;
-    ev.data.fd = fd;
-    ev.events = EPOLLIN;
-    if (et)
-    {
-        ev.events |= EPOLLET;
-    }
-    epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
-    setnonblocking(fd);
-}
-
-//从epfd删除节点
-static void delfd(int epfd, int fd)
-{
-    epoll_ctl(epfd, EPOLL_CTL_DEL, fd, 0);
-    close(fd);
+    //调用tick，处理定时器任务
+    list_clock.tick(epfd);
+    //一次alarm调用只会引起一次SIGALRM信号
+    //所以我们要重新定时，以不断触发SIGALRM信号
+    alarm(TIMESLOT);
 }
 
 static void sig_handler(int sig)
@@ -85,9 +77,10 @@ class WorkerProcess
 public:
     pid_t m_pid;     //子进程PID
     int m_pipefd[2]; //用于和父进程通信的管道
+    int m_clients;   //记录当前连接的客户数量
 
 public:
-    WorkerProcess() : m_pid(-1) {}
+    WorkerProcess() : m_pid(-1), m_clients(0) {}
 };
 
 //进程池
@@ -119,6 +112,7 @@ private:
     int m_min_process;                         //最小进程数
     int m_max_process;                         //最大进程数
     int m_lfd;                                 //服务类提供的listenfd
+
     /*master进程和worker进程不同的变量*/
     int m_stop; //每个进程结束的标志
     int m_idx;  //每个worker进程的索引号，master进程的索引号为-1
@@ -188,12 +182,16 @@ void ProcessPool<T>::run_master()
 {
     //创建epfd、注册信号、监听信号管道
     init_sig_pipe();
+    //父进程额外监听SIGALRM信号
+    //addsig(SIGALRM, sig_handler);
     //监听m_lfd
     addfd(m_epfd, m_lfd);
     epoll_event events[MAX_EVENT_NUMBER];
     int worker_id = 0;
     int new_conn = 1;
     int worker_process_number = m_min_process; //当前worker进程
+    int all_clients = 0;                       //记录总的连接客户数
+
     int ret = -1;
 
     while (!m_stop)
@@ -227,7 +225,7 @@ void ProcessPool<T>::run_master()
                 worker_id = select_worker();
                 //使用管道通知woker_id进程
                 write(m_workers[worker_id].m_pipefd[0], (char *)&new_conn, sizeof(new_conn));
-                printf("let worker[%d] process %d accept the connection\n", worker_id, getpid());
+                //printf("let worker[%d] process %d accept the connection\n", worker_id, getpid());
             }
             else if ((sockfd == sig_pipefd[0]) && (events[i].events & EPOLLIN))
             {
@@ -244,6 +242,17 @@ void ProcessPool<T>::run_master()
                     {
                         switch (signals[j])
                         {
+                        // case SIGALRM:
+                        // {
+                        //     //遍历每个worker进程已连接的客户数
+                        //     for (int k = 0; k < m_min_process; k++)
+                        //     {
+                        //         printf("worker[%d] has %d clients\n", m_workers[k].m_pid, m_workers[k].m_clients);
+                        //         all_clients += m_workers[k].m_clients;
+                        //     }
+                        //     printf("detective %d clients currently!\n", all_clients);
+                        //     alarm(1);
+                        // }
                         case SIGCHLD: //子进程退出
                         {
                             pid_t pid;
@@ -266,16 +275,6 @@ void ProcessPool<T>::run_master()
                                     }
                                 }
                             }
-                            // /*如果所有子进程都已经退出了，则父进程也退出*/
-                            // m_stop = false;
-                            // //再次检查是否还有子进程
-                            // for (size_t k = 0; k < m_min_process; k++)
-                            // {
-                            //     if (m_workers[k].m_pid != -1)
-                            //     {
-                            //         m_stop = false;
-                            //     }
-                            // }
                             break;
                         }
                         //父进程中断，杀死所有进程
@@ -316,12 +315,20 @@ void ProcessPool<T>::run_worker()
     init_sig_pipe();
     //监听管道读端
     addfd(m_epfd, m_workers[m_idx].m_pipefd[1]);
+    //监听定时信号
+    addsig(SIGALRM, sig_handler);
+    bool timeout = false; //当SIGALRM触发时，变为true，执行定时事件
     epoll_event events[MAX_EVENT_NUMBER];
     //请求服务的客户
     T *users = new T[PER_PROCESS_USER];
+
+    //创建一个定时器容器
+    ListClock list_clock;
+
     assert(users);
     int ret = -1;
-    int user_number = 0; //记录当前客户数
+    alarm(TIMESLOT); //TIMESLOT秒后触发一次SIGALRM信号,pipefd[0]可读
+
     while (!m_stop)
     {
         int n = epoll_wait(m_epfd, events, MAX_EVENT_NUMBER, -1);
@@ -333,7 +340,7 @@ void ProcessPool<T>::run_worker()
         for (int i = 0; i < n; i++)
         {
             int sockfd = events[i].data.fd;
-            //管道可读，说明有新客户可以连接
+            //管道可读，说明有新客户可以连接，每个客户添加一个定时事件，处理非活动连接
             if ((sockfd == m_workers[m_idx].m_pipefd[1]) && (events[i].events & EPOLLIN))
             {
                 int client = 0;
@@ -345,7 +352,7 @@ void ProcessPool<T>::run_worker()
                 //接受连接
                 else if (client == 1)
                 {
-                    if (user_number > PER_PROCESS_USER)
+                    if (m_workers[m_idx].m_clients > PER_PROCESS_USER)
                     {
                         printf("max client limit...\n");
                         continue;
@@ -358,14 +365,24 @@ void ProcessPool<T>::run_worker()
                         perror("accept()");
                         continue;
                     }
-                    user_number++;
-                    printf("worker %d accept new client....\n", getpid());
+                    m_workers[m_idx].m_clients += 1;
+                    printf("worker %d accept new client....%d\n", getpid(), m_workers[m_idx].m_clients);
+
                     //监听cfd
                     addfd(m_epfd, cfd);
-                    //定时器
-
                     //为该客户初始化服务
                     users[cfd].init(m_epfd, cfd, raddr);
+
+                    //设置定时事件
+                    ListNode *node = new ListNode;
+                    node->callback = clock_func;
+                    node->client_data = &users[cfd];
+                    time_t cur = time(nullptr);
+                    node->expire = cur + 3 * TIMESLOT;  //3 TIMESLOT后关闭
+
+                    users[cfd].m_node = node;
+
+                    list_clock.push(node);
                 }
             }
             //有信号
@@ -382,6 +399,11 @@ void ProcessPool<T>::run_worker()
                     {
                         switch (signals[j])
                         {
+                        case SIGALRM:
+                        {
+                            timeout = true;
+                            break;
+                        }
                         case SIGCHLD:
                         {
                             pid_t pid;
@@ -409,11 +431,24 @@ void ProcessPool<T>::run_worker()
             {
                 if (users[sockfd].Read())
                 {
+                    //调整定时事件
+                    if (users[sockfd].m_node)
+                    {
+                        time_t cur = time(nullptr);
+                        users[sockfd].m_node->expire = cur + 3 * TIMESLOT;
+                        printf("adjust timer once\n");
+                        list_clock.adjust(users[sockfd].m_node);
+                    }
                     users[sockfd].process(); //服务类解析request
                 }
                 else
                 {
                     users[sockfd].close_conn(true);
+                    //移除定时事件
+                    if (users[sockfd].m_node)
+                    {
+                        list_clock.pop(users[sockfd].m_node);
+                    }
                 }
             }
             else if (events[i].events & EPOLLOUT)
@@ -422,12 +457,26 @@ void ProcessPool<T>::run_worker()
                 if (!users[sockfd].Write())
                 {
                     users[sockfd].close_conn(true);
+                    if (users[sockfd].m_node)
+                    {
+                        list_clock.pop(users[sockfd].m_node);
+                    }
                 }
             }
             else //暂时跳过其他事件
             {
                 users[sockfd].close_conn(true);
+                if (users[sockfd].m_node)
+                {
+                    list_clock.pop(users[sockfd].m_node);
+                }
             }
+        }
+        //所有事件处理完毕后再执行定时事件
+        if (timeout)
+        {
+            time_handler(list_clock, m_epfd);
+            timeout = false;
         }
     }
 
@@ -447,6 +496,7 @@ void ProcessPool<T>::run()
         return;
     }
     printf("master %d run...\n", getgid());
+    //alarm(1);     //发送SIGALRM定时信号，计算当前总的客户数量
     run_master(); //master进程执行这句
 }
 
