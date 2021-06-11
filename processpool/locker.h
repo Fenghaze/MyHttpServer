@@ -1,16 +1,9 @@
-/**
- * @author: fenghaze
- * @date: 2021/06/01 14:45
- * @desc: 对互斥锁、条件变量和信号量进行封装
- */
+#ifndef __LOCKER_H
+#define __LOCKER_H
 
-#ifndef LOCK_H
-#define LOCK_H
-
+#include <exception>
 #include <pthread.h>
 #include <semaphore.h>
-#include <exception>
-
 /*封装信号量的类：信号量的作用是可以让多个线程读取资源，达到资源共享*/
 class sem
 {
@@ -71,11 +64,6 @@ public:
         return pthread_mutex_unlock(&m_mutex) == 0;
     }
 
-    pthread_mutex_t *get()
-    {
-        return &m_mutex;
-    }
-
 private:
     pthread_mutex_t m_mutex;
 };
@@ -86,31 +74,31 @@ public:
     /*创建并初始化条件变量*/
     cond()
     {
+        if (pthread_mutex_init(&m_mutex, NULL) != 0)
+        {
+            throw std::exception();
+        }
         if (pthread_cond_init(&m_cond, NULL) != 0)
         {
             /*构造函数中一旦出现问题，就应该立即释放已经成功分配了的资源*/
+            pthread_mutex_destroy(&m_mutex);
             throw std::exception();
         }
     }
     /*销毁条件变量*/
     ~cond()
     {
-        //pthread_mutex_destroy(&m_mutex);
+        pthread_mutex_destroy(&m_mutex);
         pthread_cond_destroy(&m_cond);
     }
     /*等待条件变量*/
-    bool wait(pthread_mutex_t *mutex)
+    bool wait()
     {
         int ret = 0;
-        ret = pthread_cond_wait(&m_cond, mutex);
-        return ret == 0;
-    }
-    bool waitForSeconds(pthread_mutex_t *mutex, int sec)
-    {
-        struct timespec abstime;
-        clock_gettime(CLOCK_REALTIME, &abstime);
-        abstime.tv_sec += static_cast<time_t>(sec);
-        return ETIMEDOUT == pthread_cond_timedwait(&cond, mutex, &abstime);
+        pthread_mutex_lock(&m_mutex);
+        ret = pthread_cond_wait(&m_cond, &m_mutex);
+        pthread_mutex_unlock(&m_mutex);
+        return ret = 0;
     }
     /*唤醒等待条件变量的线程*/
     bool signal()
@@ -118,14 +106,9 @@ public:
         return pthread_cond_signal(&m_cond) == 0;
     }
 
-    bool broadcast()
-    {
-        return pthread_cond_broadcast(&m_cond) == 0;
-    }
-
 private:
-    //pthread_mutex_t m_mutex;    /*条件变量的互斥锁*/
-    pthread_cond_t m_cond; /*条件变量*/
+    pthread_mutex_t m_mutex;    /*条件变量的互斥锁*/
+    pthread_cond_t m_cond;      /*条件变量*/
 };
 
-#endif // LOCK_H
+#endif
