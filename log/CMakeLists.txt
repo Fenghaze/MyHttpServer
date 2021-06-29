@@ -1,19 +1,13 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.1)
 
-project (log)
+project(testLog)
 
-# SRC_LIST源文件目录为 src
-aux_source_directory (src SRC_LIST)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14")
 
-# 依赖的头文件目录为 include
-include_directories (include)
+set(CMAKE_CXX_COMPLIER "clang++")
 
-# 生成目标文件 main
-add_executable (log_test ${SRC_LIST})
+aux_source_directory(. DIR_SRCS)
 
-# -Wall -g 编译选项
-add_definitions("-Wall -g")
-set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O3 -g -std=c++11 -Wall")
+add_executable(testLog ${DIR_SRCS})
 
-# 目标文件输出目录为 bin
-set (EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+target_link_libraries(testLog pthread)
