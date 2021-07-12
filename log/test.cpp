@@ -4,14 +4,15 @@
 
 #include <iostream>
 #include <thread>
-
+#include <unistd.h>
 #include <stdio.h>
 
 using namespace std;
 
 void tf()
 {
-    for (int i=0; i<1; ++i) {
+    for (int i = 0; i < 1; ++i)
+    {
         LOG_TRACE << "test TRACE----------------------------";
         LOG_DEBUG << "test DEBUG----------------------------";
         LOG_INFO << "test INFO----------------------------------";
@@ -26,11 +27,9 @@ int main()
     Logger::setLogLevel(Logger::TRACE);
     Logger::setConcurrentMode();
     Localtime begin(Localtime::now());
-    
 
-    // thread t(tf);
+    thread t(tf);
     // thread t2(tf);
-    // thread t3(tf);
     for (int i = 0; i < 1; ++i)
     {
         //Logger构造函数宏
@@ -41,10 +40,8 @@ int main()
         LOG_ERROR << "test xxxx <<<<<<<<<<< -------";
     }
 
-
-    // t.join();
+    t.join();
     // t2.join();
-    // t3.join();
 
     double times = timeDifference(Localtime::now(), begin);
 
