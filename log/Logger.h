@@ -67,7 +67,7 @@ namespace clog
         Logger(SourceFile file, int line, LogLevel level);
         Logger(SourceFile file, int line, LogLevel level, const char *func);
         Logger(SourceFile file, int line, bool toAbort);
-        //析构函数：打印最后一行日志
+        //析构函数：打印最后一行日志、异步日志输出日志到文件
         ~Logger();
 
         //获取日志流对象
@@ -79,6 +79,7 @@ namespace clog
 
         //启动异步模式
         static void setConcurrentMode();
+
         //static void finishConcurrent();
 
         //void (*)(const std::string &)函数指针取别名为OutputFunc

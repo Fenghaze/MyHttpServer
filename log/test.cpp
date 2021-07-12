@@ -7,13 +7,11 @@
 
 #include <stdio.h>
 
-
 using namespace std;
-
 
 void tf()
 {
-    for (int i=0; i<100000; ++i) {
+    for (int i=0; i<1; ++i) {
         LOG_TRACE << "test TRACE----------------------------";
         LOG_DEBUG << "test DEBUG----------------------------";
         LOG_INFO << "test INFO----------------------------------";
@@ -28,11 +26,14 @@ int main()
     Logger::setLogLevel(Logger::TRACE);
     Logger::setConcurrentMode();
     Localtime begin(Localtime::now());
+    
 
-    thread t(tf);
-    thread t2(tf);
-    thread t3(tf);
-    for (int i=0; i<100000; ++i) {
+    // thread t(tf);
+    // thread t2(tf);
+    // thread t3(tf);
+    for (int i = 0; i < 1; ++i)
+    {
+        //Logger构造函数宏
         LOG_TRACE << "test TRACE----------------------------";
         LOG_DEBUG << "test DEBUG----------------------------";
         LOG_INFO << "test INFO----------------------------------";
@@ -40,11 +41,11 @@ int main()
         LOG_ERROR << "test xxxx <<<<<<<<<<< -------";
     }
 
-    t.join();
-    t2.join();
-    t3.join();
-//    Logger::finishConcurrent();
-        
+
+    // t.join();
+    // t2.join();
+    // t3.join();
+
     double times = timeDifference(Localtime::now(), begin);
 
     printf("Time is %10.4lf s\n", times);
@@ -52,87 +53,81 @@ int main()
     return 0;
 }
 
+// clog::AsyncLogger logger;
 
-/*
-clog::AsyncLogger logger;
+// string str1("1111\ttest lohg-----------------------sfifhauofghauofgafaffa----------da1\n");
+// string str2("2222\tgfduadifgadsiuyfgasiyfgfahufaogfoaasiyfgasiyfasiyfasyidfasiyfdaisy2\n");
+// string str3("3333\tjipyhgo8yhiayvfauftasuvsijfgeujfagsuofgauofaguoffgahkfgaiy6fgahikdfbvahk3\n");
+// string str4("444\tfhienrikqpfnianfipqwfjqiopfmcalm,cla;kcaopfafafhasufhauogatqw4\n");
+// string str5("555\tfahuofajfiqpknrfkemngkltymnhioyjp[okgopsxjgpuejropghfabfuaguyfjitr5\n");
 
-string str1("1111test lohg-----------------------sfifhauofghauofgafaffa----------da1\n");
-string str2("2222gfduadifgadsiuyfgasiyfgfahufaogfoaasiyfgasiyfasiyfasyidfasiyfdaisy2\n");
-string str3("3333jipyhgo8yhiayvfauftasuvsijfgeujfagsuofgauofaguoffgahkfgaiy6fgahikdfbvahk3\n");
-string str4("444fhienrikqpfnianfipqwfjqiopfmcalm,cla;kcaopfafafhasufhauogatqw4\n");
-string str5("555fahuofajfiqpknrfkemngkltymnhioyjp[okgopsxjgpuejropghfabfuaguyfjitr5\n");
+// void tf1()
+// {
 
+//     for (int i = 0; i < 5; ++i)
+//     {
+//         logger.append(str5.data(), str5.size());
+//         logger.append(str1.data(), str1.size());
+//         logger.append(str3.data(), str3.size());
+//         logger.append(str4.data(), str4.size());
+//         logger.append(str2.data(), str2.size());
+//     }
+// }
 
-void tf1()
-{
+// void tf2()
+// {
 
+//     for (int i = 0; i < 5; ++i)
+//     {
+//         logger.append(str1.data(), str1.size());
+//         logger.append(str3.data(), str3.size());
+//         logger.append(str4.data(), str4.size());
+//         logger.append(str5.data(), str5.size());
+//         logger.append(str2.data(), str2.size());
+//     }
+// }
 
-    for (int i=0; i<50000; ++i) {
-        logger.append(str5.data(), str5.size());
-        logger.append(str1.data(), str1.size());
-        logger.append(str3.data(), str3.size());
-        logger.append(str4.data(), str4.size());
-        logger.append(str2.data(), str2.size());
-    }
-}
+// void tf3()
+// {
 
-void tf2()
-{
+//     for (int i = 0; i < 5; ++i)
+//     {
+//         logger.append(str1.data(), str1.size());
+//         logger.append(str4.data(), str4.size());
+//         logger.append(str5.data(), str5.size());
+//         logger.append(str3.data(), str3.size());
+//         logger.append(str2.data(), str2.size());
+//     }
+// }
 
+// int main()
+// {
+//     using namespace clog;
 
-    for (int i=0; i<50000; ++i) {
-        logger.append(str1.data(), str1.size());
-        logger.append(str3.data(), str3.size());
-        logger.append(str4.data(), str4.size());
-        logger.append(str5.data(), str5.size());
-        logger.append(str2.data(), str2.size());
-    }
-}
+//     logger.start();
 
-void tf3()
-{
+//     Localtime begin(Localtime::now());
 
+//     thread t1(tf1);
+//     thread t2(tf2);
+//     thread t3(tf3);
 
-    for (int i=0; i<50000; ++i) {
-        logger.append(str1.data(), str1.size());
-        logger.append(str4.data(), str4.size());
-        logger.append(str5.data(), str5.size());
-        logger.append(str3.data(), str3.size());
-        logger.append(str2.data(), str2.size());
-    }
-}
+//     for (int i = 0; i < 10; ++i)
+//     {
+//         logger.append(str2.data(), str2.size());
+//         logger.append(str4.data(), str4.size());
+//         logger.append(str1.data(), str1.size());
+//         logger.append(str5.data(), str5.size());
+//         logger.append(str3.data(), str3.size());
+//     }
 
-int main()
-{
-    using namespace clog;
-    
+//     t1.join();
+//     t2.join();
+//     t3.join();
 
-    logger.start();
+//     double times = timeDifference(Localtime::now(), begin);
 
-    Localtime begin(Localtime::now());
-    
-    thread t1(tf1);
-    thread t2(tf2);
-    thread t3(tf3);
+//     printf("Time is %10.4lf s\n", times);
 
-    for (int i=0; i<50000; ++i) {
-        logger.append(str2.data(), str2.size());
-        logger.append(str4.data(), str4.size());
-        logger.append(str1.data(), str1.size());
-        logger.append(str5.data(), str5.size());
-        logger.append(str3.data(), str3.size());
-    }
-    
-    t1.join();
-    t2.join();
-    t3.join();
-    
-    double times = timeDifference(Localtime::now(), begin);
-
-    printf("Time is %10.4lf s\n", times);
-
-    return 0;
-}   
-
-
-*/
+//     return 0;
+// }

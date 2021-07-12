@@ -74,9 +74,10 @@ Logger.h实现了三个类、重载`LogStream`的`<<`运算符和日志类对象
 
     - ```c++
       //构造函数：初始化成员函数，日志流对象输出当前线程号、格式化的时间戳、日志级别到日志文件
+      //日志输出就是在这个构造函数中完成的
       Impl(LogLevel level, int savedErrno, const Logger::SourceFile &file, int line);
       ```
-
+  
   - ```c++
     //构造函数：每个构造函数传入不同的参数，实例化一个Impl对象
     Logger(SourceFile file, int line);	//文件名、行号
@@ -84,20 +85,14 @@ Logger.h实现了三个类、重载`LogStream`的`<<`运算符和日志类对象
     Logger(SourceFile file, int line, LogLevel level, const char *func);	//文件名、行号、日志级别、函数名
     Logger(SourceFile file, int line, bool toAbort);	//文件名、行号、错误码
     ```
-
+  
   - `static void setConcurrentMode()`：启动异步日志线程
 
 > Logger.cpp：异步日志的初始设置
 
 - `AsyncLogger logger`：异步日志对象
 
-- `thread logThread`：异步日志线程
-
 - `pid_t tid`：当前运行的线程号
-
-- `bool _runing`：是否运行线程
-
-- `BlockingQueue<std::string> queue`：阻塞队列
 
 - ```c++
   //重载LogStream的<<运算符，内部调用s.append()保存数据
@@ -109,19 +104,123 @@ Logger.h实现了三个类、重载`LogStream`的`<<`运算符和日志类对象
 
 - `LogLevel g_logLevel`：日志级别，初始化为`INFO`
 
-- `OutputFunc g_output`：输出的回调函数，初始化为`defaultOutput`
-
-- `ofstream logStream`：文件流对象，打开的是`g_logFileName`
-
-## BlockingQueue
-
-
-
-
 
 ## AsyncLogger
 
-AsyncLogger.h/cpp 异步日志对象
+**实现功能：**
+
+AsyncLogger.h实现了一个类：
+
+- `class AsyncLogger`：双缓冲异步日志类，成员变量和主要成员函数如下
+
+  - ```c++
+    std::mutex mutex_;				//阻塞队列互斥锁
+    std::condition_variable cond_;	//阻塞队列条件变量
+    
+    using Buffer = detail::FixBuffer<detail::kLargeBuffer>;		//缓冲区重命名
+    using BufferVector = std::vector<std::unique_ptr<Buffer>>;	//vector存放缓冲区指针
+    using BufferPtr = BufferVector::value_type;		//vector中的每个元素（指向缓冲区的指针）
+    
+    std::thread thread_;			//日志线程
+    bool running_;					//线程运行标志
+    const int flushInterval_; 		//刷新缓冲区的时间间隔
+    
+    BufferPtr currentBuffer_; 		//vec中指向当前buffer的指针
+    BufferPtr nextBuffer_;    		//vec中指向下一个buffer的指针
+    BufferVector buffers_;    		//存放buffer指针的vec
+    ```
+
+  - `void start()`：创建并运行日志线程
+
+  - `void stop()`：停止运行线程
+
+  - `void append(const char *logline, size_t len)`：添加日志信息
+
+  - `void threadFunc()`：**双缓冲机制实现异步日志**
+
+  ```c++
+  void AsyncLogger::threadFunc()
+  {
+      assert(running_ == true);
+      //定义两个Buffer指针
+      BufferPtr newBuffer1(new Buffer);
+      BufferPtr newBuffer2(new Buffer);
+      //定义Buffer指针数组
+      BufferVector buffersToWrite;
+      buffersToWrite.reserve(16);
+  
+      //打开日志文件流，可写
+      FILE *stream = fopen(detail::getLogFileName().data(), "w");
+      assert(stream);
+  
+      while (running_)
+      {
+          assert(newBuffer1 && newBuffer1->size() == 0);
+          assert(newBuffer2 && newBuffer2->size() == 0);
+          assert(buffersToWrite.empty());
+  
+          {
+              //写缓冲区时，需要加锁
+              std::unique_lock<std::mutex> lock(mutex_);
+              if (buffers_.empty()) // unusual usage!
+              {
+                  cond_.wait_for(lock, std::chrono::seconds(flushInterval_));
+              }
+              //vec保存当前buffer指针
+              buffers_.push_back(std::move(currentBuffer_));
+              //当前buffer指向新的buffer指针1
+              currentBuffer_ = std::move(newBuffer1);
+              //交换vec
+              buffersToWrite.swap(buffers_);
+              if (!nextBuffer_)
+              {
+                  nextBuffer_ = std::move(newBuffer2);
+              }
+          }
+  
+          assert(!buffersToWrite.empty());
+  
+          if (buffersToWrite.size() > 25)
+          {
+              // TODO::dropping log messages
+              printf("two much\n");
+          }
+  
+          //二进制流写入数据
+          for (size_t i = 0; i < buffersToWrite.size(); ++i)
+          {
+              fwrite(buffersToWrite[i]->data(), 1, buffersToWrite[i]->size(), stream);
+          }
+  
+          if (buffersToWrite.size() > 2)
+          {
+              buffersToWrite.resize(2);
+          }
+  
+          if (!newBuffer1)
+          {
+              assert(!buffersToWrite.empty());
+              newBuffer1 = std::move(buffersToWrite.back());
+              buffersToWrite.pop_back();
+              newBuffer1->reset();
+          }
+  
+          if (!newBuffer2)
+          {
+              assert(!buffersToWrite.empty());
+              newBuffer2 = std::move(buffersToWrite.back());
+              buffersToWrite.pop_back();
+              newBuffer2->reset();
+          }
+  
+          buffersToWrite.clear();
+          fflush(stream);
+      }
+      fflush(stream);
+  }
+  ```
+
+  
 
 # 优化
 

@@ -143,6 +143,7 @@ Logger::Impl::Impl(LogLevel level, int savedErrno, const Logger::SourceFile &fil
       _time(Localtime::now()),
       _stream()
 {
+    //流对象的内部有一个buffer，保存这些数据
     _stream << tid << ' ';
     _stream << _time.toFormattedString() << ' ';
     _stream << T(LogLevelName[_level], 6);
@@ -157,7 +158,6 @@ void Logger::Impl::finish()
 {
     _stream << " - " << _file << ":" << _line << "\n\0";
 }
-
 
 Logger::Logger(SourceFile file, int line)
     : _pImpl(new Impl(INFO, 0, file, line))
@@ -180,34 +180,21 @@ Logger::Logger(SourceFile file, int line, bool toAbort)
 {
 }
 
-/*
-Logger::~Logger()
-{
-    _pImpl->finish();
-    const detail::FixBuffer<detail::kSmallBuffer>& buffer(_pImpl->_stream.buffer());
-    g_output(std::move(buffer.constBuffer()));
-    if (_pImpl->_level == FATAL)
-    {
-        abort();
-    }
-}
-*/
-
 Logger::~Logger()
 {
     //输出最后一行日志
     _pImpl->finish();
 
-    //获得第一缓冲区数据
+    //获得第一缓冲区
     const detail::FixBuffer<detail::kSmallBuffer> &buffer(_pImpl->_stream.buffer());
 
-    //将数据保存
+    //异步日志：前端缓冲区中记录了日志数据，append通知后端输出日志到文件
     logger.append(buffer.data(), buffer.size());
 
     //如果日志级别为报错FATAL，则终止程序
     if (_pImpl->_level == FATAL)
     {
-        abort();    //跳出调用
+        abort(); //跳出调用
     }
 }
 
@@ -236,14 +223,13 @@ void Logger::setConcurrentMode()
     logger.start();
 }
 
-/*
-void Logger::finishConcurrent()
-{
-    _runing = false;
-    queue.put("\0");
-    logThread.join(); 
-}
-*/
+// void Logger::finishConcurrent()
+// {
+//     _runing = false;
+//     queue.put("\0");
+//     logThread.join();
+// }
+
 void Logger::setOutput(Logger::OutputFunc output) noexcept
 {
     g_output = output;
