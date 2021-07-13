@@ -7,7 +7,7 @@
 #ifndef TIMEHEAP_H
 #define TIMEHEAP_H
 
-#include "../pool/http.h"
+#include "../processpool/http.h"
 #include <deque>
 
 class HeapNode

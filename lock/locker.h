@@ -74,31 +74,31 @@ public:
     /*创建并初始化条件变量*/
     cond()
     {
-        if (pthread_mutex_init(&m_mutex, NULL) != 0)
-        {
-            throw std::exception();
-        }
+        // if (pthread_mutex_init(&m_mutex, NULL) != 0)
+        // {
+        //     throw std::exception();
+        // }
         if (pthread_cond_init(&m_cond, NULL) != 0)
         {
             /*构造函数中一旦出现问题，就应该立即释放已经成功分配了的资源*/
-            pthread_mutex_destroy(&m_mutex);
+            //pthread_mutex_destroy(&m_mutex);
             throw std::exception();
         }
     }
     /*销毁条件变量*/
     ~cond()
     {
-        pthread_mutex_destroy(&m_mutex);
+        //pthread_mutex_destroy(&m_mutex);
         pthread_cond_destroy(&m_cond);
     }
     /*等待条件变量*/
-    bool wait()
+    bool wait(pthread_mutex_t *m_mutex)
     {
         int ret = 0;
-        pthread_mutex_lock(&m_mutex);
-        ret = pthread_cond_wait(&m_cond, &m_mutex);
-        pthread_mutex_unlock(&m_mutex);
-        return ret = 0;
+        //pthread_mutex_lock(&m_mutex);
+        ret = pthread_cond_wait(&m_cond, m_mutex);
+        //pthread_mutex_unlock(&m_mutex);
+        return ret == 0;
     }
     /*唤醒等待条件变量的线程*/
     bool signal()
@@ -106,8 +106,13 @@ public:
         return pthread_cond_signal(&m_cond) == 0;
     }
 
+    bool broadcast()
+    {
+        return pthread_cond_broadcast(&m_cond) == 0;
+    }
+
 private:
-    pthread_mutex_t m_mutex;    /*条件变量的互斥锁*/
+    //pthread_mutex_t m_mutex;    /*条件变量的互斥锁*/
     pthread_cond_t m_cond;      /*条件变量*/
 };
 
