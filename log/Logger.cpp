@@ -185,7 +185,7 @@ Logger::~Logger()
     //输出最后一行日志
     _pImpl->finish();
 
-    //获得第一缓冲区
+    //获得存放日志数据的缓冲区
     const detail::FixBuffer<detail::kSmallBuffer> &buffer(_pImpl->_stream.buffer());
 
     //异步日志：前端缓冲区中记录了日志数据，append通知后端输出日志到文件
@@ -221,6 +221,11 @@ void Logger::setConcurrentMode()
     logThread = std::move(std::thread(concurrentFunc));
 */
     logger.start();
+}
+
+void Logger::closeLog()
+{
+    logger.stop();
 }
 
 // void Logger::finishConcurrent()

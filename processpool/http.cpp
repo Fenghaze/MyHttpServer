@@ -72,7 +72,7 @@ void HTTPConn::init(int epfd, int sockfd, const sockaddr_in &addr)
 {
     m_sockfd = sockfd;
     m_address = addr;
-    m_epollfd = epfd;
+    m_epollfd = epfd; 
     //开发环境下调试时方便端口复用，生产环境下应该禁用此选项
     int reuse = 1;
     setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));

@@ -7,7 +7,7 @@
 #define CLOG_LOGGER_H
 
 #include "LogStream.h"
-
+#include "AsyncLogger.h"
 #include <memory>
 
 #include <string.h>
@@ -86,6 +86,8 @@ namespace clog
         using OutputFunc = void (*)(const std::string &);
         //设置输出的回调函数
         static void setOutput(OutputFunc) noexcept;
+    
+    public:
 
     private:
         //Impl类：实现日志输出

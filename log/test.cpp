@@ -1,3 +1,9 @@
+/**
+ * @author: fenghaze
+ * @date: 2021/07/15 14:33
+ * @desc: 测试日志系统，在main中启动异步日志线程，整个程序写同一个日志文件
+ */
+
 #include "Logger.h"
 #include "AsyncLogger.h"
 #include "Localtime.h"
@@ -6,19 +12,12 @@
 #include <thread>
 #include <unistd.h>
 #include <stdio.h>
-
+#include "testlog.h"
 using namespace std;
 
-void tf()
+void tf1()
 {
-    for (int i = 0; i < 1; ++i)
-    {
-        LOG_TRACE << "test TRACE----------------------------";
-        LOG_DEBUG << "test DEBUG----------------------------";
-        LOG_INFO << "test INFO----------------------------------";
-        LOG_WARN << "test WARN --------------------------------";
-        LOG_ERROR << "test xxxx <<<<<<<<<<< -------";
-    }
+    LOG_INFO << "create logfile......";
 }
 
 int main()
@@ -28,8 +27,10 @@ int main()
     Logger::setConcurrentMode();
     Localtime begin(Localtime::now());
 
-    thread t(tf);
-    // thread t2(tf);
+    //必须创建一个线程后，异步日志才能正常使用
+    thread t(tf1);
+    t.join();
+
     for (int i = 0; i < 1; ++i)
     {
         //Logger构造函数宏
@@ -40,13 +41,11 @@ int main()
         LOG_ERROR << "test xxxx <<<<<<<<<<< -------";
     }
 
-    t.join();
-    // t2.join();
+    TestLog log(6);
 
     double times = timeDifference(Localtime::now(), begin);
 
     printf("Time is %10.4lf s\n", times);
-
     return 0;
 }
 

@@ -41,7 +41,7 @@ void AsyncLogger::stop()
 Description : 
 前端在生成一条日志消息时，会调用AsyncLogging::append()。
 如果currentBuffer_够用，就把日志内容写入到currentBuffer_中，
-如果不够用(就认为其满了)，就把currentBuffer_放到已满buffer数组中，
+如果不够用(就认为其满了)，就把currentBuffer_放到buffer_数组中，
 等待消费者线程（即后台线程）来取。则将预备好的另一块缓冲
 （nextBuffer_）移用为当前缓冲区（currentBuffer_）。
 *********************************************************************/
