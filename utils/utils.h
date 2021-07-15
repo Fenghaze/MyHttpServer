@@ -19,8 +19,6 @@
 #include <signal.h>
 #include <string.h>
 
-
-
 //将fd设置为非阻塞
 static int setnonblocking(int fd)
 {
@@ -31,15 +29,20 @@ static int setnonblocking(int fd)
 }
 
 //添加节点到epfd
-static void addfd(int epfd, int fd, bool et = true)
+void addfd(int epfd, int fd, bool one_shot = true, bool et = false)
 {
     epoll_event ev;
     ev.data.fd = fd;
-    ev.events = EPOLLIN | EPOLLERR;
+    ev.events = EPOLLIN;
+    if (one_shot)
+    {
+        ev.events |= EPOLLONESHOT;
+    }
     if (et)
     {
         ev.events |= EPOLLET;
     }
+
     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
     setnonblocking(fd);
 }
@@ -52,12 +55,12 @@ static void delfd(int epfd, int fd)
 }
 
 //修改epfd的节点
-// static void modfd(int epfd, int fd, epoll_event event)
-// {
-//     epoll_event ev;
-//     ev.data.fd = fd;
-//     ev.events = event;
-//     epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
-// }
+void modfd(int epfd, int fd, int event)
+{
+    epoll_event ev;
+    ev.data.fd = fd;
+    ev.events = event | EPOLLONESHOT | EPOLLRDHUP;
+    epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+}
 
 #endif // UTILS_H

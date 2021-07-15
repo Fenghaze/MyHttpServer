@@ -16,7 +16,7 @@
 
 #define MAX_EVENTS_NUM 10000
 #define BUFFERSIZE 2048
-#define SERVERPORT  "7777"
+#define SERVERPORT  "8888"
 
 /*每个客户连接不停地向服务器发送这个请求*/
 static const char *request = "GET http://localhost/index.html HTTP/1.1\r\nConnection:keep-alive\r\n\r\nxxxxxxxxxxxx";
@@ -121,7 +121,7 @@ int main(int argc, char const *argv[])
 
     epoll_event events[MAX_EVENTS_NUM];
     char buffer[BUFFERSIZE];
-    //暂停发送接受服务
+    //暂停收发消息
     pause();
     while (1)
     {

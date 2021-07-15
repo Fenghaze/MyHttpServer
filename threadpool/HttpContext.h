@@ -10,14 +10,14 @@
 class HttpContext
 {
 public:
-    HttpContext(/* args */);
+    HttpContext();
     ~HttpContext();
 
 private:
 
 };
 
-HttpContext::HttpContext(/* args */)
+HttpContext::HttpContext()
 {
 }
 

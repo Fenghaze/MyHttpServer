@@ -10,14 +10,14 @@
 class HttpResponse
 {
 public:
-    HttpResponse(/* args */);
+    HttpResponse();
     ~HttpResponse();
 private:
 
 
 };
 
-HttpResponse::HttpResponse(/* args */)
+HttpResponse::HttpResponse()
 {
 }
 

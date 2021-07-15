@@ -25,7 +25,7 @@
 #include <iostream>
 #include "HttpRequest.h"
 #include "HttpResponse.h"
-
+#include "../utils/utils.h"
 class HttpServer
 {
 public:
@@ -34,9 +34,12 @@ public:
 
 public:
     //初始化客户连接：获得客户信息，并添加到m_epollfd
-    void init(int cfd, struct sockadd_in &addr);
+    void init(int cfd, struct sockaddr_in &addr);
 
-    void init(int epfd, int cfd, struct sockadd_in &addr);
+    void init(int epfd, int cfd, struct sockaddr_in &addr);
+
+    //读取http request
+    void read();
 
     //IO处理函数：解析http requset，响应http response
     void process();
@@ -48,23 +51,39 @@ public:
     /*线程池模型中，所有socket上的事件都被注册到同一个epoll内核事件表中，所以将epoll文件描述符设置为静态的，
     在main线程中进行初始化*/
     static int m_epollfd;
-
     /*进程池模型中，worker进程监听的socket被注册到不同的epoll内核事件表中，
     调用void init(int epfd, int cfd, struct sockadd_in &addr)初始化*/
     int _epfd;
-
     static int m_user_count; //统计用户数量
-    
 
 private:
-    int m_sockfd;            //用于通信的连接cfd
-    struct sockaddr_in addr; //socket地址
+    int m_sockfd;              //用于通信的连接cfd
+    struct sockaddr_in m_addr; //socket地址
 
-    HttpRequest request;
-    HttpResponse response;
+    HttpRequest httpRequest;
+    HttpResponse httpResponse;
 };
 
+int HttpServer::m_epollfd = -1;
+int HttpServer::m_user_count = 0;
 
+void HttpServer::init(int cfd, struct sockaddr_in &addr)
+{
+    m_user_count++;
+    m_sockfd = cfd;
+    m_addr = addr;
+    addfd(m_epollfd, m_sockfd, true);
+    httpRequest.set_cfd(cfd);
+}
 
+void HttpServer::read()
+{
+    //循环读取http requset data 并存放到 httpRequest.m_read_buf 中
+}
+
+void HttpServer::process()
+{
+    std::cout << "process http request and response" << std::endl;
+}
 
 #endif // HTTPSERVER_H
