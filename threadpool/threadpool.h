@@ -1,7 +1,7 @@
 /**
  * @author: fenghaze
  * @date: 2021/07/13 16:55
- * @desc: 线程池，维护一个任务队列，当队列空时，等待
+ * @desc: 线程池，维护一个任务队列
  */
 
 #ifndef THREADPOOL_H
@@ -11,8 +11,7 @@
 #include <vector>
 #include <exception>
 #include <pthread.h>
-
-using namespace clog;
+#include "../lock/locker.h"
 
 template <class T>
 class ThreadPool
@@ -32,9 +31,9 @@ private:
     //创建工作线程，并分离
     ThreadPool(int thread_number, int max_requests);
     ~ThreadPool();
-    //工作线程运行的函数，它不断从工作队列中取出任务并执行
+    //工作线程运行的函数，内部调用run()
     static void *worker(void *arg);
-    //运行工作线程
+    //线程调用的函数，即线程创建后就一直等待信号量m_queuestat，从任务队列中取任务来执行
     void run();
 
 private:
@@ -50,6 +49,8 @@ private:
 template <class T>
 ThreadPool<T>::ThreadPool(int thread_number, int max_requests) : m_thread_number(thread_number), m_max_requests(max_requests)
 {
+    m_stop = false;
+    m_threads = nullptr;
     if (thread_number <= 0 || max_requests <= 0)
         throw std::exception();
     m_threads = new pthread_t[m_thread_number];
@@ -57,7 +58,7 @@ ThreadPool<T>::ThreadPool(int thread_number, int max_requests) : m_thread_number
         throw std::exception();
     for (int i = 0; i < m_thread_number; i++)
     {
-        printf("create the %dth thread\n",i);
+        printf("create the %dth thread\n", i);
         if (pthread_create(m_threads + i, nullptr, worker, this) != 0)
         {
             delete[] m_threads;
@@ -76,6 +77,58 @@ ThreadPool<T>::~ThreadPool()
 {
     delete[] m_threads;
     m_stop = true;
+}
+
+template <class T>
+bool ThreadPool<T>::append(T *task)
+{
+    m_queuelocker.lock();
+    //超过任务限制数，则报错
+    if(m_workqueue.size() > m_max_requests)
+    {
+        m_queuelocker.unlock();
+        return false;
+    }
+    m_workqueue.push_back(task);
+    m_queuelocker.unlock();
+    //信号量增加
+    m_queuestat.post();
+    return true;
+}
+
+template <class T>
+void *ThreadPool<T>::worker(void *arg)
+{
+    ThreadPool *threadpool = (ThreadPool *)arg;
+    threadpool->run();
+    return threadpool;
+}
+
+template <class T>
+void ThreadPool<T>::run()
+{
+    while (!m_stop)
+    {
+        //等待信号量
+        m_queuestat.wait();
+        //从任务队列中取出任务时需要加锁
+        m_queuelocker.lock();
+        //队列为空，继续等待
+        if (m_workqueue.empty())
+        {
+            m_queuelocker.unlock();
+            continue;
+        }
+        T *task = m_workqueue.front();
+        m_workqueue.pop_front();
+        m_queuelocker.unlock();
+        if (!task)
+        {
+            continue;
+        }
+        //执行任务
+        task->process(); 
+    }
 }
 
 #endif // THREADPOOL_H
