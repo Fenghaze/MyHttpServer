@@ -19,7 +19,7 @@
 #define SERVERPORT  "8888"
 
 /*每个客户连接不停地向服务器发送这个请求*/
-static const char *request = "GET http://localhost/index.html HTTP/1.1\r\nConnection:keep-alive\r\n\r\nxxxxxxxxxxxx";
+static const char *request = "GET / HTTP/1.1\r\nConnection:keep-alive\r\n";
 
 int setnonblocking(int fd)
 {
@@ -122,7 +122,7 @@ int main(int argc, char const *argv[])
     epoll_event events[MAX_EVENTS_NUM];
     char buffer[BUFFERSIZE];
     //暂停收发消息
-    pause();
+    //pause();
     while (1)
     {
         int fds = epoll_wait(epfd, events, MAX_EVENTS_NUM, 2000);

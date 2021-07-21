@@ -223,10 +223,10 @@ void Logger::setConcurrentMode()
     logger.start();
 }
 
-void Logger::closeLog()
-{
-    logger.stop();
-}
+// void Logger::closeLog()
+// {
+//     logger.stop();
+// }
 
 // void Logger::finishConcurrent()
 // {

@@ -26,6 +26,7 @@
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 #include "../utils/utils.h"
+
 class HttpServer
 {
 public:
@@ -39,7 +40,10 @@ public:
     void init(int epfd, int cfd, struct sockaddr_in &addr);
 
     //读取http request
-    void read();
+    bool read();
+
+    //写http response
+    bool write();
 
     //IO处理函数：解析http requset，响应http response
     void process();
@@ -62,6 +66,8 @@ private:
 
     HttpRequest httpRequest;
     HttpResponse httpResponse;
+
+    char *file_address; //html资源文件的内存地址
 };
 
 int HttpServer::m_epollfd = -1;
@@ -73,17 +79,40 @@ void HttpServer::init(int cfd, struct sockaddr_in &addr)
     m_sockfd = cfd;
     m_addr = addr;
     addfd(m_epollfd, m_sockfd, true);
+    //获取request对象
+    httpRequest = httpResponse.get_request();
     httpRequest.set_cfd(cfd);
+    httpResponse.set_cfd(cfd);
 }
 
-void HttpServer::read()
+bool HttpServer::read()
 {
-    //循环读取http requset data 并存放到 httpRequest.m_read_buf 中
+    //循环读取http requset data
+    return httpRequest.read();
 }
+
+bool HttpServer::write()
+{
+    return httpResponse.write();
+}
+
 
 void HttpServer::process()
 {
-    std::cout << "process http request and response" << std::endl;
+    //解析request
+    HttpRequest::HTTP_CODE read_ret = httpRequest.process_request(); 
+    if (read_ret == HttpRequest::NO_REQUEST)
+    {
+        modfd(m_epollfd, m_sockfd, EPOLLIN);
+        return;
+    }
+    //reponse响应
+    // bool write_ret = httpResponse.process_write(read_ret);
+    // if(!write_ret)
+    // {
+    //     close_conn();
+    // }
+    // modfd(m_epollfd, m_sockfd, EPOLLOUT);
 }
 
 #endif // HTTPSERVER_H
