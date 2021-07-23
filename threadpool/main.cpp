@@ -69,7 +69,6 @@ int main(int argc, char const *argv[])
     epfd = epoll_create(1);
     assert(epfd != -1);
     HttpServer::m_epollfd = epfd;
-
     //将lfd注册到epfd上
     addfd(epfd, lfd, false);
 
@@ -95,7 +94,7 @@ int main(int argc, char const *argv[])
                     continue;
                 }
                 users[cfd].init(cfd, raddr);
-                printf("accept new client %d..\n", HttpServer::m_user_count);
+                printf("accept %dth new client ..\n", HttpServer::m_user_count);
             }
             //处理客户连接上接收到的数据
             else if (events[i].events & EPOLLIN)
@@ -111,7 +110,7 @@ int main(int argc, char const *argv[])
             {
                 if (users[sockfd].write())
                 {
-                    std::cout << "send data to the client " << sockfd << std::endl;
+                    //std::cout << "send data to the client fd=" << sockfd << std::endl;
                 }
             }
             else

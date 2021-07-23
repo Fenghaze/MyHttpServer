@@ -64,7 +64,7 @@ private:
     int m_sockfd;              //用于通信的连接cfd
     struct sockaddr_in m_addr; //socket地址
 
-    HttpRequest httpRequest;
+    HttpRequest *httpRequest;
     HttpResponse httpResponse;
 
     char *file_address; //html资源文件的内存地址
@@ -81,38 +81,48 @@ void HttpServer::init(int cfd, struct sockaddr_in &addr)
     addfd(m_epollfd, m_sockfd, true);
     //获取request对象
     httpRequest = httpResponse.get_request();
-    httpRequest.set_cfd(cfd);
+    httpRequest->set_cfd(cfd);
+    httpResponse.set_epfd(m_epollfd);
     httpResponse.set_cfd(cfd);
 }
 
 bool HttpServer::read()
 {
     //循环读取http requset data
-    return httpRequest.read();
+    return httpRequest->read();
 }
 
 bool HttpServer::write()
 {
     return httpResponse.write();
 }
-
+void HttpServer::close_conn(bool real_close)
+{
+    if (real_close && (m_sockfd != -1))
+    {
+        printf("client fd=%d exit...\n", m_sockfd);
+        delfd(m_epollfd, m_sockfd);
+        m_sockfd = -1;
+        m_user_count--;
+    }
+}
 
 void HttpServer::process()
 {
     //解析request
-    HttpRequest::HTTP_CODE read_ret = httpRequest.process_request(); 
+    HttpRequest::HTTP_CODE read_ret = httpRequest->process_request();
     if (read_ret == HttpRequest::NO_REQUEST)
     {
         modfd(m_epollfd, m_sockfd, EPOLLIN);
         return;
     }
     //reponse响应
-    // bool write_ret = httpResponse.process_write(read_ret);
-    // if(!write_ret)
-    // {
-    //     close_conn();
-    // }
-    // modfd(m_epollfd, m_sockfd, EPOLLOUT);
+    bool write_ret = httpResponse.process_write(read_ret);
+    if (!write_ret)
+    {
+        close_conn();
+    }
+    modfd(m_epollfd, m_sockfd, EPOLLOUT);
 }
 
 #endif // HTTPSERVER_H

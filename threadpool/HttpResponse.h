@@ -13,7 +13,6 @@
 #include <stdarg.h>
 #include "../utils/utils.h"
 #include "HttpRequest.h"
-#include "HttpServer.h"
 
 std::map<const int, const char *> RES_CODE = {
     {200, "OK"},
@@ -27,6 +26,7 @@ std::map<const int, const char *> RES_SOURCE =
         {403, "You do not have permission to get file form this server.\n"},
         {404, "The requested file was not found on this server.\n"},
         {500, "There was an unusual problem serving the request file.\n"}};
+
 class HttpResponse
 {
 public:
@@ -42,7 +42,7 @@ public:
         bytes_have_send = 0;
         memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
     }
-    HttpRequest get_request() { return request; }
+    HttpRequest *get_request() { return &request; }
 
 public:
     //发送客户数据（response data）
@@ -53,6 +53,9 @@ public:
 
     //设置cfd
     void set_cfd(int cfd) { m_cfd = cfd; }
+
+    //设置epfd
+    void set_epfd(int epollfd) { epfd = epollfd; }
 
 private:
     //解除html文件的内存地址映射
@@ -83,6 +86,8 @@ private:
     bool set_blank_line();
 
 private:
+    int epfd;   //HttpServer.h传来的epfd
+
     static const int WRITE_BUFFER_SIZE = 1024;
     char m_write_buf[WRITE_BUFFER_SIZE]; //发送缓冲区
     int m_write_idx;                     //发送的下一个字节
@@ -113,7 +118,7 @@ bool HttpResponse::write()
     //如果没有数据要发送，则监听EPOLLIN事件，初始化request数据
     if (bytes_to_send == 0)
     {
-        modfd(HttpServer::m_epollfd, m_cfd, EPOLLIN);
+        modfd(epfd, m_cfd, EPOLLIN);
         init();
         return true;
     }
@@ -126,7 +131,7 @@ bool HttpResponse::write()
         {
             if (errno == EAGAIN)
             {
-                modfd(HttpServer::m_epollfd, m_cfd, EPOLLOUT);
+                modfd(epfd, m_cfd, EPOLLOUT);
                 return true;
             }
             unmap();
@@ -153,7 +158,7 @@ bool HttpResponse::write()
         if (bytes_to_send <= 0)
         {
             unmap();
-            modfd(HttpServer::m_epollfd, m_cfd, EPOLLIN);
+            modfd(epfd, m_cfd, EPOLLIN);
             if (request.get_linger())
             {
                 init();
@@ -166,7 +171,6 @@ bool HttpResponse::write()
         }
     }
 }
-
 bool HttpResponse::process_write(HttpRequest::HTTP_CODE ret)
 {
     switch (ret)
@@ -217,11 +221,14 @@ bool HttpResponse::process_write(HttpRequest::HTTP_CODE ret)
         if (request.get_file_stat().st_size != 0)
         {
             set_headers(request.get_file_stat().st_size);
+            //第一个缓冲区：当前写缓冲区
             m_iv[0].iov_base = m_write_buf;
             m_iv[0].iov_len = m_write_idx;
+            //第二个缓冲区:html内容
             m_iv[1].iov_base = request.get_file_address();
             m_iv[1].iov_len = request.get_file_stat().st_size;
             m_iv_count = 2;
+            //总的待发送字节数=当前写缓冲区的内容长度+html内容长度
             bytes_to_send = m_write_idx + request.get_file_stat().st_size;
             return true;
         }
@@ -236,6 +243,7 @@ bool HttpResponse::process_write(HttpRequest::HTTP_CODE ret)
     default:
         return false;
     }
+    //除了FILE_REQUEST外的其他情况
     m_iv[0].iov_base = m_write_buf;
     m_iv[0].iov_len = m_write_idx;
     m_iv_count = 1;
@@ -257,7 +265,6 @@ bool HttpResponse::set_response(const char *format, ...)
     }
     m_write_idx += len;
     va_end(arg_list);
-    std::cout << "request:" << m_write_buf << std::endl;
     return true;
 }
 

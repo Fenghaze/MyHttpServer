@@ -128,8 +128,8 @@ private:
     char *m_host;         //请求头Host
     char *m_string;       //存储请求头数据
 
-    char m_real_file[FILENAME_LEN];     //HTML资源文件名
-    struct stat m_file_stat;            //文件属性
+    char m_real_file[FILENAME_LEN]; //HTML资源文件名
+    struct stat m_file_stat;        //文件属性
 
     char *m_file_address; //html资源文件的内存地址
 };
@@ -158,6 +158,7 @@ HttpRequest::LINE_STATUS HttpRequest::check_line()
     char temp;
     for (; m_checked_idx < m_read_idx; ++m_checked_idx)
     {
+        ////printf("m_read_idx=%d, m_checked_idx=%d\n", m_read_idx, m_checked_idx);
         temp = m_read_buf[m_checked_idx];
         if (temp == '\r')
         {
@@ -199,7 +200,7 @@ HttpRequest::HTTP_CODE HttpRequest::process_request()
     while ((m_state == CHECK_STATE_CONTENT && line_status == LINE_OK) || ((line_status = check_line()) == LINE_OK))
     {
         line = get_line();
-        std::cout << "parse line:" << line << std::endl;
+        //std::cout << "parse line:" << line << std::endl;
         m_start_line = m_checked_idx;
         switch (m_state)
         {
@@ -244,7 +245,7 @@ HttpRequest::HTTP_CODE HttpRequest::process_request()
 
 HttpRequest::HTTP_CODE HttpRequest::parse_requestline(char *text)
 {
-    std::cout << "parse_requestline()" << std::endl;
+    //std::cout << "parse_requestline()" << std::endl;
 
     //text = "GET / HTTP/1.1";
     m_url = strpbrk(text, " \t"); // m_url = " / HTTP/1.1";
@@ -290,7 +291,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_requestline(char *text)
     if (strlen(m_url) == 1)
     {
         //把"index.html"所指向的字符串追加到m_url所指向的字符串的结尾
-        printf("return judge.html\n");
+        //printf("return judge.html\n");
         strcat(m_url, "judge.html");
     }
     //推动状态机：解析请求头
@@ -300,7 +301,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_requestline(char *text)
 
 HttpRequest::HTTP_CODE HttpRequest::parse_headers(char *text)
 {
-    std::cout << "parse_headers()" << std::endl;
+    //std::cout << "parse_headers()" << std::endl;
 
     //遇到空行，表示头部字段解析完毕
     if (text[0] == '\0')
@@ -342,7 +343,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_headers(char *text)
     //其他字段不处理
     else
     {
-        printf("oop!unknow header: %s\n", text);
+        //printf("unknow header, %s\n", text);
         // LOG_INFO("oop!unknow header: %s", text);
         // Log::get_instance()->flush();
     }
@@ -351,7 +352,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_headers(char *text)
 
 HttpRequest::HTTP_CODE HttpRequest::parse_content(char *text)
 {
-    std::cout << "parse_content()" << std::endl;
+    //std::cout << "parse_content()" << std::endl;
     if (m_read_idx >= (m_content_length + m_checked_idx))
     {
         text[m_content_length] = '\0';
@@ -364,10 +365,10 @@ HttpRequest::HTTP_CODE HttpRequest::parse_content(char *text)
 
 HttpRequest::HTTP_CODE HttpRequest::do_request()
 {
-    std::cout << "do_request()" << std::endl;
+    //std::cout << "do_request()" << std::endl;
     strcpy(m_real_file, doc_root);
     int len = strlen(doc_root);
-    printf("m_url:%s\n", m_url);
+    //printf("m_url:%s\n", m_url);
     /*
     p    -> html
     "/0"   返回注册页面    register.html
@@ -409,7 +410,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
             //若浏览器端输入的用户名和密码在表中可以查找到，返回欢迎页面
             if (users.find(name) != users.end() && users[name] == password)
             {
-                printf("return welcome.html\n");
+                //printf("return welcome.html\n");
                 strcpy(m_url, "/welcome.html");
             }
             else
@@ -424,7 +425,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
                 m_userslock.lock();
                 users[name] = password;
                 m_userslock.unlock();
-                printf("return log.html\n");
+                //printf("return log.html\n");
                 strcpy(m_url, "/log.html");
             }
             else
@@ -436,7 +437,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
     if (*(p + 1) == '0')
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        printf("return register.html\n");
+        //printf("return register.html\n");
         strcpy(m_url_real, "/register.html");
         strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
         free(m_url_real);
@@ -444,7 +445,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
     else if (*(p + 1) == '1')
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        printf("return log.html\n");
+        //printf("return log.html\n");
         strcpy(m_url_real, "/log.html");
         strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
         free(m_url_real);
@@ -452,7 +453,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
     else if (*(p + 1) == '4')
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        printf("return picture.html\n");
+        //printf("return picture.html\n");
         strcpy(m_url_real, "/picture.html");
         strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
         free(m_url_real);
@@ -460,7 +461,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
     else if (*(p + 1) == '5')
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        printf("return video.html\n");
+        //printf("return video.html\n");
         strcpy(m_url_real, "/video.html");
         strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
         free(m_url_real);
