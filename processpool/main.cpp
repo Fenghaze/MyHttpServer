@@ -14,7 +14,7 @@
 #include <fcntl.h>
 #include <string>
 #include "processpool.h"
-#include "http.h"
+#include "../http/HttpServer.h"
 #define SERVERPORT "7777"
 #define USE_PROCESSPOOL
 
@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
     listen(lfd, 128);
 
 #ifdef USE_PROCESSPOOL
-    ProcessPool<HTTPConn> &pool = ProcessPool<HTTPConn>::create(lfd, 5, 10);
+    ProcessPool<HttpServer> &pool = ProcessPool<HttpServer>::create(lfd, 5, 10);
     pool.run();
     close(lfd);
 #endif // USE_PROCESSPOOL

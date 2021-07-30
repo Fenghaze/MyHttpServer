@@ -27,6 +27,7 @@
 #include "HttpResponse.h"
 #include "../utils/utils.h"
 #include "../clock/timeHeap.h"
+
 class HttpServer
 {
 public:
@@ -59,14 +60,17 @@ public:
     调用void init(int epfd, int cfd, struct sockadd_in &addr)初始化*/
     int _epfd;
     static int m_user_count; //统计用户数量
+    //定时器节点
+    HeapNode *m_node;
 
 private:
+    int m_sockfd;              //用于通信的连接cfd
+    struct sockaddr_in m_addr; //socket地址
+
     HttpRequest *httpRequest;
     HttpResponse httpResponse;
 
-    int m_sockfd;              //用于通信的连接cfd
-    struct sockaddr_in m_addr; //socket地址
-    char *file_address;        //html资源文件的内存地址
+    char *file_address; //html资源文件的内存地址
 };
 
 int HttpServer::m_epollfd = -1;

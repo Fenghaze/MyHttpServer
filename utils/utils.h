@@ -6,7 +6,7 @@
 
 #ifndef UTILS_H
 #define UTILS_H
-
+#include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -17,7 +17,8 @@
 #include <sys/socket.h>
 #include <assert.h>
 #include <signal.h>
-#include <string.h>
+#include "../threadpool/HttpServer.h"
+
 
 //将fd设置为非阻塞
 static int setnonblocking(int fd)
@@ -62,5 +63,7 @@ void modfd(int epfd, int fd, int event)
     ev.events = event | EPOLLONESHOT | EPOLLRDHUP;
     epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
 }
+
+
 
 #endif // UTILS_H
