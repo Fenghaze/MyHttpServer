@@ -17,8 +17,6 @@
 #include <sys/socket.h>
 #include <assert.h>
 #include <signal.h>
-#include "../threadpool/HttpServer.h"
-
 
 //将fd设置为非阻塞
 static int setnonblocking(int fd)
@@ -30,23 +28,37 @@ static int setnonblocking(int fd)
 }
 
 //添加节点到epfd
-void addfd(int epfd, int fd, bool one_shot = true, bool et = false)
+static void addfd(int epfd, int fd, bool et = true)
 {
     epoll_event ev;
     ev.data.fd = fd;
-    ev.events = EPOLLIN;
-    if (one_shot)
-    {
-        ev.events |= EPOLLONESHOT;
-    }
+    ev.events = EPOLLIN | EPOLLERR;
     if (et)
     {
         ev.events |= EPOLLET;
     }
-
     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
     setnonblocking(fd);
 }
+
+//添加节点到epfd
+// static void addfd(int epfd, int fd, bool one_shot = true, bool et = true)
+// {
+//     epoll_event ev;
+//     ev.data.fd = fd;
+//     ev.events = EPOLLIN;
+//     if (one_shot)
+//     {
+//         ev.events |= EPOLLONESHOT;
+//     }
+//     if (et)
+//     {
+//         ev.events |= EPOLLET;
+//     }
+
+//     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
+//     setnonblocking(fd);
+// }
 
 //从epfd删除节点
 static void delfd(int epfd, int fd)
@@ -56,7 +68,7 @@ static void delfd(int epfd, int fd)
 }
 
 //修改epfd的节点
-void modfd(int epfd, int fd, int event)
+static void modfd(int epfd, int fd, int event)
 {
     epoll_event ev;
     ev.data.fd = fd;

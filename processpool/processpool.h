@@ -100,8 +100,8 @@ private:
     ProcessPool(int lfd, int min_process_num, int max_process_num);
     ~ProcessPool();
     void init_sig_pipe();
-    void run_master();      //master进程，负责监听lfd，有新客户时，通知worker进程
-    void run_worker();      //worker进程，负责接受cfd，并监听cfd
+    void run_master();
+    void run_worker();
     int select_worker();
 
 private:
@@ -207,7 +207,6 @@ void ProcessPool<T>::run_master()
             int sockfd = events[i].data.fd;
             if (sockfd == m_lfd)
             {
-                // 时间片轮转选择进程
                 // int k = worker_id;
                 // do
                 // {
@@ -369,7 +368,7 @@ void ProcessPool<T>::run_worker()
                     m_workers[m_idx].m_clients += 1;
                     printf("worker %d accept new client....%d\n", getpid(), m_workers[m_idx].m_clients);
 
-                    //为该客户初始化服务，监听cfd
+                    //为该客户初始化服务
                     users[cfd].init(m_epfd, cfd, raddr);
 
                     //设置定时事件
