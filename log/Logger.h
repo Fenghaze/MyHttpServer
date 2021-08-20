@@ -83,9 +83,9 @@ namespace clog
         //static void finishConcurrent();
 
         //void (*)(const std::string &)函数指针取别名为OutputFunc
-        using OutputFunc = void (*)(const std::string &);
+        //using OutputFunc = void (*)(const std::string &);
         //设置输出的回调函数
-        static void setOutput(OutputFunc) noexcept;
+        //static void setOutput(OutputFunc) noexcept;
     
     public:
 

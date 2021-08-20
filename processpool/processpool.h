@@ -9,7 +9,6 @@
 #ifndef PROCESSPOOL_H
 #define PROCESSPOOL_H
 
-#include "../clock/listClock.h"
 #include <vector>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -26,6 +25,8 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <string>
+#include "listClock.h"
 #include "../utils/utils.h"
 #include "http.h"
 static int sig_pipefd[2];
@@ -225,7 +226,7 @@ void ProcessPool<T>::run_master()
                 worker_id = select_worker();
                 //使用管道通知woker_id进程
                 write(m_workers[worker_id].m_pipefd[0], (char *)&new_conn, sizeof(new_conn));
-                //printf("let worker[%d] process %d accept the connection\n", worker_id, getpid());
+                printf("let worker[%d] process %d accept the connection\n", worker_id, getpid());
             }
             else if ((sockfd == sig_pipefd[0]) && (events[i].events & EPOLLIN))
             {
@@ -366,8 +367,10 @@ void ProcessPool<T>::run_worker()
                         continue;
                     }
                     m_workers[m_idx].m_clients += 1;
-                    printf("worker %d accept new client....%d\n", getpid(), m_workers[m_idx].m_clients);
 
+                    printf("worker %d accept new client....%d\n", getpid(), m_workers[m_idx].m_clients);
+                    //监听cfd
+                    addfd(m_epfd, cfd);
                     //为该客户初始化服务
                     users[cfd].init(m_epfd, cfd, raddr);
 
@@ -376,7 +379,7 @@ void ProcessPool<T>::run_worker()
                     node->callback = clock_func;
                     node->client_data = &users[cfd];
                     time_t cur = time(nullptr);
-                    node->expire = cur + 3 * TIMESLOT;  //3 TIMESLOT后关闭
+                    node->expire = cur + 3 * TIMESLOT; //3 TIMESLOT后关闭
 
                     users[cfd].m_node = node;
 
@@ -493,8 +496,7 @@ void ProcessPool<T>::run()
         run_worker();
         return;
     }
-    printf("master %d run...\n", getgid());
-    //alarm(1);     //发送SIGALRM定时信号，计算当前总的客户数量
+    printf("master %d run...\n", getpid());
     run_master(); //master进程执行这句
 }
 

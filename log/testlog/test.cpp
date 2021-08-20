@@ -12,12 +12,15 @@
 #include <thread>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "testlog.h"
 using namespace std;
 
 void tf1()
 {
-    LOG_INFO << "create logfile......";
+    TestLog log(6);
+    //LOG_INFO << "create logfile......";
 }
 
 int main()
@@ -31,21 +34,18 @@ int main()
     thread t(tf1);
     t.join();
 
-    for (int i = 0; i < 1; ++i)
-    {
-        //Logger构造函数宏
-        LOG_TRACE << "test TRACE----------------------------";
-        LOG_DEBUG << "test DEBUG----------------------------";
-        LOG_INFO << "test INFO----------------------------------";
-        LOG_WARN << "test WARN --------------------------------";
-        LOG_ERROR << "test xxxx <<<<<<<<<<< -------";
-    }
+    //Logger构造函数宏
+    // LOG_TRACE << "test TRACE----------------------------";
+    // LOG_DEBUG << "test DEBUG----------------------------";
+    // LOG_INFO << "test INFO----------------------------------";
+    // LOG_WARN << "test WARN --------------------------------";
+    // LOG_ERROR << "test xxxx <<<<<<<<<<< -------";
 
-    TestLog log(6);
 
     double times = timeDifference(Localtime::now(), begin);
 
     printf("Time is %10.4lf s\n", times);
+
     return 0;
 }
 

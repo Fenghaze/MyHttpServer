@@ -14,6 +14,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <thread>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 using namespace clog;
 
@@ -22,17 +26,26 @@ class TestLog
 public:
     TestLog(int printtimes = 3) : times(printtimes)
     {
-        for (int i = 0; i < times; i++)
-        {
-            LOG_TRACE << "TestLog test trace-----" << i + 1;
-        }
+        flag = false;
+        LOG_INFO << "testlog thread....";
+        std::thread tid(run);
+        tid.join();
     }
     ~TestLog()
     {
-        LOG_TRACE << "~TestLog()";
+        LOG_TRACE << "TestLog() delete";
+    }
+
+    static void run()
+    {
+        for (size_t i = 0; i < 3; i++)
+        {
+            LOG_WARN << "worker thread...";
+        }
     }
 
 private:
+    bool flag;
     int times;
 };
 

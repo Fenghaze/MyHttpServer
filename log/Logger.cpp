@@ -69,45 +69,45 @@ namespace clog
         return s;
     }
 
-    const std::string g_logFileName = std::move(detail::getLogFileName());
-    //logStream为文件输出流对象
-    std::ofstream logStream(g_logFileName);
+    // const std::string g_logFileName = std::move(detail::getLogFileName());
+    // //logStream为文件输出流对象
+    // std::ofstream logStream(g_logFileName);
 
-    //可调用的回调函数，作为setOutput(OutputFunc)的参数
-    void defaultOutput(const std::string &msg)
-    {
-        //输出msg到日志文件
-        logStream << msg;
-    }
+    // //可调用的回调函数，作为setOutput(OutputFunc)的参数
+    // void defaultOutput(const std::string &msg)
+    // {
+    //     //输出msg到日志文件
+    //     logStream << msg;
+    // }
 
-    Logger::OutputFunc g_output = defaultOutput;
+    //Logger::OutputFunc g_output = defaultOutput;
     Logger::LogLevel g_logLevel = Logger::INFO; // 默认等级INFO
 
     //使用阻塞队列+string的方法异步写日志，效率低，已弃用；改为AsyncLogger.h中双缓存方法
-    void concurrentFunc() // 多线程场景下单独使用一个线程来写日志
-    {
-        while (_runing)
-        {
-            auto str(std::move(queue.take()));
-            defaultOutput(str);
-        }
+    // void concurrentFunc() // 多线程场景下单独使用一个线程来写日志
+    // {
+    //     while (_runing)
+    //     {
+    //         auto str(std::move(queue.take()));
+    //         defaultOutput(str);
+    //     }
 
-        int size;
+    //     int size;
 
-        if ((size = queue.size()) != 0)
-        {
-            for (int i = 0; i < size; ++i)
-            {
-                auto str(std::move(queue.take()));
-                defaultOutput(str);
-            }
-        }
-    }
+    //     if ((size = queue.size()) != 0)
+    //     {
+    //         for (int i = 0; i < size; ++i)
+    //         {
+    //             auto str(std::move(queue.take()));
+    //             defaultOutput(str);
+    //         }
+    //     }
+    // }
 
-    void concurrentOutput(const std::string &msg)
-    {
-        queue.put(std::move(msg));
-    }
+    // void concurrentOutput(const std::string &msg)
+    // {
+    //     queue.put(std::move(msg));
+    // }
 
 } // end of namespace clog
 
@@ -235,7 +235,7 @@ void Logger::setConcurrentMode()
 //     logThread.join();
 // }
 
-void Logger::setOutput(Logger::OutputFunc output) noexcept
-{
-    g_output = output;
-}
+// void Logger::setOutput(Logger::OutputFunc output) noexcept
+// {
+//     g_output = output;
+// }

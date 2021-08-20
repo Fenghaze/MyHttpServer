@@ -8,7 +8,6 @@
 #ifndef __HTTP_H
 #define __HTTP_H
 
-#include "../clock/listClock.h"
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -27,7 +26,10 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/uio.h>
-#include "../clock/listClock.h"
+#include "../log/Logger.h"
+#include "../log/AsyncLogger.h"
+#include "../log/Localtime.h"
+#include "listClock.h"
 #include "../lock/locker.h"
 
 class ListNode;
