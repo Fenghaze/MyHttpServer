@@ -109,14 +109,14 @@ private:
 
 private:
     static const int FILENAME_LEN = 200;
-    static const int READ_BUFFER_SIZE = 2048;                          //读缓冲区的大小
-    const char *doc_root = "/home/fenghaze/Desktop/MyHttpServer/html"; //当浏览器出现连接重置时，重新定位网站根路径
-    int m_cfd;                                                         //连接cfd
-    CHECK_STATE m_state;                                               //初始状态
-    char m_read_buf[READ_BUFFER_SIZE];                                 //存放http request的读缓冲区
-    int m_read_idx;                                                    //标识读缓冲中已经读入的客户数据的最后一个字节的下一个位置
-    int m_checked_idx;                                                 //当前正在分析的字符在读缓冲区中的位置
-    int m_start_line;                                                  //当前正在解析的行的起始位置
+    static const int READ_BUFFER_SIZE = 2048;                  //读缓冲区的大小
+    const char *doc_root = "/home/zhl/桌面/MyHttpServer/html"; //网站根路径
+    int m_cfd;                                                 //连接cfd
+    CHECK_STATE m_state;                                       //初始状态
+    char m_read_buf[READ_BUFFER_SIZE];                         //存放http request的读缓冲区
+    int m_read_idx;                                            //标识读缓冲中已经读入的客户数据的最后一个字节的下一个位置
+    int m_checked_idx;                                         //当前正在分析的字符在读缓冲区中的位置
+    int m_start_line;                                          //当前正在解析的行的起始位置
 
     METHOD m_method; //请求方法
     char *m_url;     //请求url
@@ -370,7 +370,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
     int len = strlen(doc_root);
     //printf("m_url:%s\n", m_url);
     /*
-    p    -> html
+    post    -> html
     "/0"   返回注册页面    register.html
     "/1"   返回登录页面    log.html
     "/2"   登录，返回欢迎页面 welcome.html
@@ -434,7 +434,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
     }
 
     //get请求
-    if (*(p + 1) == '0')
+    if (*(p + 1) == '0')  
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
         //printf("return register.html\n");

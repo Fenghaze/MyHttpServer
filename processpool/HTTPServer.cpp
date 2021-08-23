@@ -18,7 +18,6 @@
 #include "http.h"
 #define SERVERPORT "7777"
 
-using namespace clog;
 
 
 int main(int argc, char const *argv[])

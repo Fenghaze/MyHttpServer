@@ -7,8 +7,7 @@
 #ifndef TIMEHEAP_H
 #define TIMEHEAP_H
 
-//#include "../processpool/http.h"
-//#include "../threadpool/HttpServer.h"
+#include "../threadpool/HttpServer.h"
 #include <deque>
 #include <sys/socket.h>
 #include <time.h>
@@ -16,6 +15,7 @@
 #include <arpa/inet.h>
 #define TIMEOUT 1
 class HeapNode;
+
 struct client_data
 {
     struct sockaddr_in addr;
@@ -29,7 +29,7 @@ public:
     HeapNode(int timeout)
     {
         expire = time(nullptr) + timeout; //初始化到期时间
-        //printf("expire = %ld\n", expire);
+        printf("expire = %ld\n", expire);
     }
 
 public:

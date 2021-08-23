@@ -28,15 +28,11 @@ static int setnonblocking(int fd)
 }
 
 //添加节点到epfd
-static void addfd(int epfd, int fd, bool one_shot = true, bool et = false)
+static void addfd(int epfd, int fd, bool et = true)
 {
     epoll_event ev;
     ev.data.fd = fd;
-    ev.events = EPOLLIN;
-    if (one_shot)
-    {
-        ev.events |= EPOLLONESHOT;
-    }
+    ev.events = EPOLLIN | EPOLLERR;
     if (et)
     {
         ev.events |= EPOLLET;
@@ -60,5 +56,7 @@ static void modfd(int epfd, int fd, int event)
     ev.events = event | EPOLLONESHOT | EPOLLRDHUP;
     epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
 }
+
+
 
 #endif // UTILS_H

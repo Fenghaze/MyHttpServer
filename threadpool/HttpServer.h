@@ -26,7 +26,7 @@
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 #include "../utils/utils.h"
-#include "../clock/timeHeap.h"
+
 class HttpServer
 {
 public:
@@ -61,12 +61,13 @@ public:
     static int m_user_count; //统计用户数量
 
 private:
+    int m_sockfd;              //用于通信的连接cfd
+    struct sockaddr_in m_addr; //socket地址
+
     HttpRequest *httpRequest;
     HttpResponse httpResponse;
 
-    int m_sockfd;              //用于通信的连接cfd
-    struct sockaddr_in m_addr; //socket地址
-    char *file_address;        //html资源文件的内存地址
+    char *file_address; //html资源文件的内存地址
 };
 
 int HttpServer::m_epollfd = -1;
@@ -87,7 +88,7 @@ void HttpServer::init(int cfd, struct sockaddr_in &addr)
 
 bool HttpServer::read()
 {
-    //循环读取http requset data
+    //读取http requset data
     return httpRequest->read();
 }
 

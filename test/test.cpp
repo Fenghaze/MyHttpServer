@@ -54,7 +54,7 @@ void start_conn(int epfd, int nums, const char *ip, int port)
         usleep(1000);
         //创建与服务端通信的socket
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        printf("create 1 sock\n");
+        printf("create 1 socket\n");
         if (sockfd < 1)
         {
             continue;
