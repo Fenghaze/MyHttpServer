@@ -14,7 +14,8 @@
 #include <sys/mman.h>
 #include "HttpServer.h"
 #include "../lock/locker.h"
-
+#include "../log/AsyncLogger.h"
+#include "../log/Logger.h"
 extern std::map<std::string, std::string> users; //保存post请求体
 extern locker m_userslock;                       //保护users临界资源
 
@@ -201,6 +202,7 @@ HttpRequest::HTTP_CODE HttpRequest::process_request()
     {
         line = get_line();
         //std::cout << "parse line:" << line << std::endl;
+        LOG_TRACE << "parse line:" << line;
         m_start_line = m_checked_idx;
         switch (m_state)
         {
@@ -246,7 +248,7 @@ HttpRequest::HTTP_CODE HttpRequest::process_request()
 HttpRequest::HTTP_CODE HttpRequest::parse_requestline(char *text)
 {
     //std::cout << "parse_requestline()" << std::endl;
-
+    //LOG_TRACE << "parse_requestline()";
     //text = "GET / HTTP/1.1";
     m_url = strpbrk(text, " \t"); // m_url = " / HTTP/1.1";
     if (!m_url)
@@ -302,7 +304,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_requestline(char *text)
 HttpRequest::HTTP_CODE HttpRequest::parse_headers(char *text)
 {
     //std::cout << "parse_headers()" << std::endl;
-
+    //LOG_TRACE << "parse_headers()";
     //遇到空行，表示头部字段解析完毕
     if (text[0] == '\0')
     {
@@ -344,8 +346,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_headers(char *text)
     else
     {
         //printf("unknow header, %s\n", text);
-        // LOG_INFO("oop!unknow header: %s", text);
-        // Log::get_instance()->flush();
+        LOG_INFO << "oop!unknow header: " << text;
     }
     return NO_REQUEST;
 }
@@ -353,6 +354,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_headers(char *text)
 HttpRequest::HTTP_CODE HttpRequest::parse_content(char *text)
 {
     //std::cout << "parse_content()" << std::endl;
+    //LOG_TRACE << "parse_content()";
     if (m_read_idx >= (m_content_length + m_checked_idx))
     {
         text[m_content_length] = '\0';
@@ -366,6 +368,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse_content(char *text)
 HttpRequest::HTTP_CODE HttpRequest::do_request()
 {
     //std::cout << "do_request()" << std::endl;
+    //LOG_TRACE << "do_queset()";
     strcpy(m_real_file, doc_root);
     int len = strlen(doc_root);
     //printf("m_url:%s\n", m_url);
@@ -402,8 +405,8 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
         for (i = i + 10; m_string[i] != '\0'; ++i, ++j)
             password[j] = m_string[i];
         password[j] = '\0';
-        printf("user=%s\tpassword=%s\n", name, password);
-
+        //printf("user=%s\tpassword=%s\n", name, password);
+        LOG_WARN << "user = " << name << "\tpassword = " << password;
         //登录验证
         if (*(p + 1) == '2')
         {
@@ -434,7 +437,7 @@ HttpRequest::HTTP_CODE HttpRequest::do_request()
     }
 
     //get请求
-    if (*(p + 1) == '0')  
+    if (*(p + 1) == '0')
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
         //printf("return register.html\n");

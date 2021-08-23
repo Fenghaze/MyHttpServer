@@ -13,10 +13,14 @@
 #include <string.h>
 #include <fcntl.h>
 #include <iostream>
+#include <thread>
 #include "HttpServer.h"
 #include "threadpool.h"
 #include "../utils/utils.h"
 #include "../lock/locker.h"
+#include "../log/AsyncLogger.h"
+#include "../log/Logger.h"
+#include "../log/Localtime.h"
 
 #define SERVERPORT "8888"
 #define MAX_EVENT_NUM 10000
@@ -48,11 +52,27 @@ int initSocket(int &lfd, struct sockaddr_in laddr)
     ret = listen(lfd, 127);
     assert(ret >= 0);
 
-    std::cout << "lfd = " << lfd << std::endl;
+    //std::cout << "lfd = " << lfd << std::endl;
+    LOG_INFO << "lfd =" << lfd;
+}
+
+void tf1()
+{
+    LOG_INFO << "create logfile......";
 }
 
 int main(int argc, char const *argv[])
 {
+
+    using namespace clog;
+    Logger::setLogLevel(Logger::TRACE);
+    Logger::setConcurrentMode();
+    Localtime begin(Localtime::now());
+
+    //必须创建一个线程后，异步日志才能正常使用
+    std::thread t(tf1);
+    t.join();   
+
     int lfd;                  //监听HttpServer的lfd
     struct sockaddr_in laddr; //服务端sockert地址
     int epfd;                 //监听所有socket的epoll
@@ -77,7 +97,8 @@ int main(int argc, char const *argv[])
         int n = epoll_wait(epfd, events, MAX_EVENT_NUM, -1);
         if ((n < 0) && (errno != EINTR))
         {
-            perror("epoll_wait()");
+            //perror("epoll_wait()");
+            LOG_ERROR << "epoll_wait()";
             exit(1);
         }
         for (int i = 0; i < n; i++)
@@ -90,11 +111,13 @@ int main(int argc, char const *argv[])
                 int cfd = accept(sockfd, (struct sockaddr *)&raddr, &raddr_len);
                 if (cfd < 0)
                 {
-                    fprintf(stdout, "errno is :%d\n", errno);
+                    //fprintf(stdout, "errno is :%d\n", errno);
+                    LOG_ERROR << "accpet() errno " << errno;
                     continue;
                 }
                 users[cfd].init(cfd, raddr);
-                printf("accept %dth new client ..\n", HttpServer::m_user_count);
+                //printf("accept %dth new client ..\n", HttpServer::m_user_count);
+                LOG_INFO << "accept " << HttpServer::m_user_count << "th new client ..";
             }
             //处理客户连接上接收到的数据
             else if (events[i].events & EPOLLIN)
@@ -115,12 +138,16 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                std::cout << "something else" << std::endl;
+                //std::cout << "something else" << std::endl;
+                LOG_INFO << "something else";
             }
         }
     }
     close(epfd);
     close(lfd);
     delete[] users;
+
+    double times = timeDifference(Localtime::now(), begin);
+    printf("Time is %10.4lf s\n", times);
     return 0;
 }

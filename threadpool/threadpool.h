@@ -12,13 +12,14 @@
 #include <exception>
 #include <pthread.h>
 #include "../lock/locker.h"
-
+#include "../log/AsyncLogger.h"
+#include "../log/Logger.h"
 template <class T>
 class ThreadPool
 {
 public:
     //懒汉模式
-    static ThreadPool<T> &create(int thread_number = 8, int max_requests = 10000)
+    static ThreadPool<T> &create(int thread_number = 4, int max_requests = 10000)
     {
         static ThreadPool<T> mInstance(thread_number, max_requests);
         return mInstance;
@@ -58,7 +59,8 @@ ThreadPool<T>::ThreadPool(int thread_number, int max_requests) : m_thread_number
         throw std::exception();
     for (int i = 0; i < m_thread_number; i++)
     {
-        printf("create the %dth thread\n", i);
+        //printf("create the %dth thread\n", i);
+        LOG_INFO << "create the " << i+1 << "th thread";
         if (pthread_create(m_threads + i, nullptr, worker, this) != 0)
         {
             delete[] m_threads;

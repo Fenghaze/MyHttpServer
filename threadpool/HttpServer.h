@@ -26,6 +26,8 @@
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 #include "../utils/utils.h"
+#include "../log/AsyncLogger.h"
+#include "../log/Logger.h"
 
 class HttpServer
 {
@@ -100,7 +102,8 @@ void HttpServer::close_conn(bool real_close)
 {
     if (real_close && (m_sockfd != -1))
     {
-        printf("client fd=%d exit...\n", m_sockfd);
+        //printf("client fd=%d exit...\n", m_sockfd);
+        LOG_INFO << "client fd="<< m_sockfd << " exit...";
         delfd(m_epollfd, m_sockfd);
         m_sockfd = -1;
         m_user_count--;

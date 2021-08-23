@@ -13,7 +13,8 @@
 #include <stdarg.h>
 #include "../utils/utils.h"
 #include "HttpRequest.h"
-
+#include "../log/AsyncLogger.h"
+#include "../log/Logger.h"
 std::map<const int, const char *> RES_CODE = {
     {200, "OK"},
     {400, "Bad Request"},

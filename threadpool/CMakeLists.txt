@@ -7,6 +7,11 @@ set(CMAKE_CXX_COMPLIER "clang++")
 
 # Add the source in project root directory
 aux_source_directory(. DIRSRCS)
+
+include_directories(../log)
+# Add block directories
+add_subdirectory(../log log)
+
 # Target
 add_executable(httpserver_threadpool ${DIRSRCS})
-target_link_libraries(httpserver_threadpool pthread)
+target_link_libraries(httpserver_threadpool log pthread)

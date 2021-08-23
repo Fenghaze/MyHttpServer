@@ -14,14 +14,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #define TIMEOUT 1
-class HeapNode;
 
-struct client_data
-{
-    struct sockaddr_in addr;
-    int sockfd;
-    HeapNode *timer;
-};
+struct client_data;
 
 class HeapNode
 {
@@ -221,6 +215,13 @@ private:
 
 public:
     std::deque<HeapNode *> heap; //堆的存储结构：双端队列
+};
+
+struct client_data
+{
+    struct sockaddr_in addr;
+    int sockfd;
+    HeapNode *timer;
 };
 
 #endif // TIMEHEAP_H
