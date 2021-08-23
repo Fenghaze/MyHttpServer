@@ -50,7 +50,7 @@ C++后台服务器开发涉及到了许多知识，开发人员不仅需要熟�
 
 - [x] 复现并简化muduo双缓存异步日志系统
 
-:white_square_button:压力测试：
+:white_square_button:测试：
 
 - [x] 编写了一个多线程客户端，每个线程负责发送N个客户连接请求，main线程负责监听cfd，不断发送GET请求
 
