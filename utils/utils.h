@@ -40,9 +40,9 @@ static void addfd(int epfd, int fd, bool one_shot = true, bool et = false)
     if (et)
     {
         ev.events |= EPOLLET;
+        setnonblocking(fd);
     }
     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
-    setnonblocking(fd);
 }
 
 //从epfd删除节点
