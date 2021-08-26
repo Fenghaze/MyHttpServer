@@ -13,10 +13,11 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
-
+#include <errno.h>
+#include <thread>
 #define MAX_EVENTS_NUM 10000
 #define BUFFERSIZE 2048
-#define SERVERPORT  "8888"
+#define SERVERPORT "8888"
 
 /*每个客户连接不停地向服务器发送这个请求*/
 static const char *request = "GET / HTTP/1.1\r\nConnection:keep-alive\r\n";
@@ -51,19 +52,25 @@ void start_conn(int epfd, int nums, const char *ip, int port)
     //发送连接请求
     for (size_t i = 0; i < nums; i++)
     {
-        usleep(1000);
         //创建与服务端通信的socket
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        printf("create 1 socket\n");
+        //允许端口重用
+        int flag = 1;
+        int ret = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+        printf("create %d socket\n", i + 1);
         if (sockfd < 1)
         {
-            continue;
+            perror("socket()");
         }
         //请求连接，如果连接建立成功，说明可以开始写入数据，监听可写事件
         if (connect(sockfd, (struct sockaddr *)&raddr, sizeof(raddr)) == 0)
         {
-            printf("build connection\n", i);
+            printf("build connection %d\n", i);
             addfd(epfd, sockfd);
+        }
+        else
+        {
+            perror("connect() ...");
         }
     }
 }
@@ -116,8 +123,9 @@ int main(int argc, char const *argv[])
 {
     int epfd = epoll_create(1);
     //发送连接请求:int nums, const char *ip, int port
-    //start_conn(epfd, atoi(argv[3]), argv[1], atoi(argv[2]));
-    start_conn(epfd, atoi(argv[1]), "0.0.0.0", atoi(SERVERPORT));
+    std::thread start(start_conn, epfd, atoi(argv[1]), "0.0.0.0", atoi(SERVERPORT));
+    //start_conn(epfd, atoi(argv[1]), "0.0.0.0", atoi(SERVERPORT));
+    start.join();
 
     epoll_event events[MAX_EVENTS_NUM];
     char buffer[BUFFERSIZE];
@@ -125,7 +133,8 @@ int main(int argc, char const *argv[])
     pause();
     while (1)
     {
-        int fds = epoll_wait(epfd, events, MAX_EVENTS_NUM, 2000);
+        printf("main ....\n");
+        int fds = epoll_wait(epfd, events, MAX_EVENTS_NUM, -1);
         for (size_t i = 0; i < fds; i++)
         {
             int sockfd = events[i].data.fd;

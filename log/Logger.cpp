@@ -1,6 +1,6 @@
 #include "Logger.h"
 #include "Localtime.h"
-#include "BlockingQueue.h"
+//#include "BlockingQueue.h"
 #include "AsyncLogger.h"
 
 #include <assert.h>
@@ -21,7 +21,7 @@ namespace clog
     //日志线程
     std::thread logThread;
     bool _runing = false;
-    BlockingQueue<std::string> queue;
+    //BlockingQueue<std::string> queue;
 
     //当前真实线程id
     thread_local pid_t tid = ::syscall(SYS_gettid);

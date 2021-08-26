@@ -19,7 +19,7 @@ class ThreadPool
 {
 public:
     //懒汉模式
-    static ThreadPool<T> &create(int thread_number = 4, int max_requests = 10000)
+    static ThreadPool<T> &create(int thread_number = 6, int max_requests = 10000)
     {
         static ThreadPool<T> mInstance(thread_number, max_requests);
         return mInstance;

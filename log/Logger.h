@@ -1,7 +1,7 @@
 /*
 *   日志器：生成日志对象
 *   单线程下，把日志记录写到缓冲区中
-*   setConcurrentMode启动异步日志模式：专门开了一个线程来记录日志，使用阻塞队列来传递日志消息
+*   setConcurrentMode启动异步日志模式：专门开了一个线程来记录日志
 */
 #ifndef CLOG_LOGGER_H
 #define CLOG_LOGGER_H
@@ -39,7 +39,7 @@ namespace clog
                 : _data(arr),
                   _size(N - 1)
             {
-                const char *slash = strrchr(_data, '/');    //strrchr查找最后一次出现'/'之后的字符串
+                const char *slash = strrchr(_data, '/'); //strrchr查找最后一次出现'/'之后的字符串
                 if (slash)
                 {
                     _data = slash + 1;
@@ -86,13 +86,12 @@ namespace clog
         //using OutputFunc = void (*)(const std::string &);
         //设置输出的回调函数
         //static void setOutput(OutputFunc) noexcept;
-    
-    public:
 
+    public:
     private:
         //Impl类：实现日志输出
         class Impl;
-        std::unique_ptr<Impl> _pImpl;   
+        std::unique_ptr<Impl> _pImpl;
     };
 
 } // end of namespace clog

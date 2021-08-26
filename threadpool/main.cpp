@@ -24,8 +24,8 @@
 #include "../clock/minheap.h"
 
 #define SERVERPORT "8888"
-#define MAX_EVENT_NUM 10000
-#define MAX_FD 65535
+#define MAX_EVENT_NUM 655350
+#define MAX_CLIENTS 300000
 
 std::map<std::string, std::string> users; //保存post请求体的数据
 locker m_userslock;                       //保护users临界资源
@@ -107,7 +107,7 @@ int main(int argc, char const *argv[])
     ThreadPool<HttpServer> &threadpool = ThreadPool<HttpServer>::create();
 
     // //预先为每个可能的客户连接分配一个 HttpServer 对象
-    HttpServer *users = new HttpServer[MAX_FD];
+    HttpServer *users = new HttpServer[MAX_CLIENTS];
 
     initSocket(lfd, laddr);
 
@@ -131,8 +131,8 @@ int main(int argc, char const *argv[])
         int n = epoll_wait(epfd, events, MAX_EVENT_NUM, -1);
         if ((n < 0) && (errno != EINTR))
         {
-            //perror("epoll_wait()");
-            LOG_ERROR << "epoll_wait()";
+            perror("epoll_wait()");
+            LOG_ERROR << "epoll_wait()" << errno;
             exit(1);
         }
         for (int i = 0; i < n; i++)
@@ -149,7 +149,7 @@ int main(int argc, char const *argv[])
                     LOG_ERROR << "accpet() errno " << errno;
                     continue;
                 }
-                if (HttpServer::m_user_count >= MAX_FD)
+                if (HttpServer::m_user_count >= MAX_CLIENTS)
                 {
                     printf("Internal server busy\n");
                     LOG_ERROR << "Internal server busy";
